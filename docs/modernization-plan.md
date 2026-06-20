@@ -99,9 +99,12 @@ truth for request/response shapes and should drive contract tests.
 1. **Zero runtime dependencies by default.** Stdlib `Net::HTTP` + `json`.
 2. **Portability over cleverness.** Works on Ruby 3.1–3.4, MRI primarily;
    no monkey-patching, no global state, thread-safe client instances.
-3. **Typed, predictable surface.** Resource objects and typed results, not raw
-   hashes. Coerce v2 string fields and v3 native fields to the *same* Ruby
-   types so version choice doesn't leak into caller code.
+3. **Faithful, per-version responses.** Each API version returns its own
+   response shape and the client preserves it as-is (wrapped in an
+   indifferent-access `Onetime::Response`). v1, v2, and v3 are deliberately
+   different wire contracts; the client does NOT normalize them to a common
+   shape. (v1 is deprecated and present only because the API still serves it.)
+   No type system (RBS/Sorbet).
 4. **Errors are exceptions.** Map `error_type` → a class hierarchy; never make
    callers branch on HTTP status strings.
 5. **Self-hosting friendly.** `base_url` is first-class; OnetimeSecret is widely
@@ -176,26 +179,25 @@ lib/
     transport.rb                  # Net::HTTP core (timeouts, retries, headers)
     adapter.rb                    # optional pluggable HTTP adapter seam
     errors.rb                     # ADR-013 mapping → exception hierarchy
+    response.rb                   # indifferent-access wrapper (per-version shape)
     resources/
       secrets.rb
       receipts.rb
       meta.rb
-    objects/                      # typed result objects + coercion
-      secret.rb
-      receipt.rb
     api/
       v3.rb                       # path/verb maps + native-type handling
-      v2.rb                       # path/verb maps + string coercion
+      v2.rb                       # path/verb maps + string-typed responses
       v1.rb                       # path/verb maps + legacy form params
-sig/                              # RBS signatures
 ```
 
 ## 6. Engineering Hygiene
 
 - **Tooling**: `standard` (or RuboCop), `frozen_string_literal: true` everywhere.
-- **Tests**: Minitest + WebMock; **VCR-style cassettes**; an **OpenAPI contract
-  test** that validates request/response shapes against the server spec.
-- **Types**: ship **RBS** signatures under `sig/`; YARD doc comments.
+- **Tests**: Minitest with dependency-injected fake transports for resource/
+  request-building coverage, real `Net::HTTP` integration tests via a local
+  one-shot TCP server, and opt-in live tests against the real API (gated by
+  `ONETIME_LIVE`). No type system (RBS/Sorbet).
+- **Docs in code**: YARD doc comments only.
 - **CI**: GitHub Actions matrix Ruby `3.1, 3.2, 3.3, 3.4, head` × lint/test;
   contract-test job that pulls the published OpenAPI spec.
 - **Release**: SemVer, real `CHANGELOG.md` (Keep a Changelog), **RubyGems
@@ -209,12 +211,12 @@ sig/                              # RBS signatures
 | Phase | Scope | Exit criteria |
 |---|---|---|
 | **0. Plan** | This document | Reviewed & approved |
-| **1. Foundation** | New gem skeleton; hand-written gemspec; drop jeweler/drydock/httparty/yajl; `version.rb`; CI matrix; `standard`; Minitest+WebMock; `CHANGELOG.md`; Trusted Publishing | Empty client builds, lints, CI green on 3.1–3.4 |
+| **1. Foundation** | New gem skeleton; hand-written gemspec; drop jeweler/drydock/httparty/yajl; `version.rb`; CI matrix; Minitest; `CHANGES.txt`; Trusted Publishing | Empty client builds, CI green on 3.1–3.4 |
 | **2. Transport core** | `Net::HTTP` transport (base_url, auth modes, timeouts, retries+backoff, headers/UA); ADR-013 error mapping; optional adapter seam | Unit-tested transport + full error hierarchy |
-| **3. v3 resources** (default) | secrets (conceal/generate/reveal/show/status), receipts (recent/show/update/burn), meta, feedback; guest-route handling; typed result objects | v3 happy-path + error paths covered; contract test passes |
-| **4. v2 + v1** | v2 resources with string→native coercion + anonymous basic auth; v1 resources (legacy form params/endpoints) as a first-class supported version | v1 and v2 contract tests pass |
+| **3. v3 resources** (default) | secrets (conceal/generate/reveal/show/status), receipts (recent/show/update/burn), meta, feedback; guest-route handling; per-version response shapes | v3 happy-path + error paths covered |
+| **4. v2 + v1** | v2 resources (string-typed responses) + anonymous basic auth; v1 resources (legacy form params/endpoints), deprecated but supported while the API serves it | v1 and v2 covered (incl. live tests) |
 | **5. CLI gem** | New `onetime-cli` gem on Thor; commands `share`/`generate`/`reveal`/`receipt`/`status`; stdin piping; json/yaml output | CLI installs & runs against live API |
-| **6. Docs & 1.0** | README rewrite, RBS, examples, migration guide; tag `1.0.0` | Published to RubyGems via OIDC |
+| **6. Docs & 1.0** | README, examples, self-hosting notes; tag `1.0.0` | Published to RubyGems via OIDC |
 
 ## 8. Compatibility & Migration
 

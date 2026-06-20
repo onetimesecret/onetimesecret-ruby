@@ -6,8 +6,10 @@ API. Share sensitive information through a link that can only be viewed once.
 - **Zero runtime dependencies** — built entirely on the Ruby standard library
   (`net/http`, `uri`, `json`), so it drops into any environment without pulling
   transitive gems.
-- **Supports API v1 and v2** — pick a version per client; the same resource
-  methods work across both.
+- **Supports API v1 and v2** — pick a version per client. The same resource
+  methods exist for both, but each version returns its own response shape (they
+  are different APIs; the client does not normalize them). **v1 is deprecated**
+  and included only because the service still serves it — use v2 for new work.
 - **Ruby 3.1+**.
 
 > The `onetime` command-line tool has moved to a separate `onetime-cli` gem so
@@ -153,8 +155,11 @@ res.http_status                                  # Integer
 res.to_h                                         # the parsed body
 ```
 
-> v1 serializes all fields as strings; v2 nests data under `record`/`details`.
-> See the [API docs](https://docs.onetimesecret.com/) for response shapes.
+The response shape is the API's, unchanged. v1 and v2 differ on purpose —
+v1 returns flat, all-string fields; v2 nests data under `record`/`details`
+with richer typing — and the client does not reconcile them. Read the
+[API docs](https://docs.onetimesecret.com/) for the shape of the version
+you target.
 
 ## Errors
 

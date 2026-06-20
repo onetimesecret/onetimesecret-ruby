@@ -29,6 +29,8 @@ ONETIME, CHANGES
   ONETIME_APIKEY environment variables.
 * REMOVED: The drydock-based `bin/onetime` executable and the gem signing
   certificate.
+* REMOVED: The redundant top-level VERSION file; lib/onetime/version.rb is
+  the single source of version truth.
 
 #### 0.5.1 (2013-02-12) ###############################
 

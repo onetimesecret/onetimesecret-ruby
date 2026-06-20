@@ -29,7 +29,6 @@ Gem::Specification.new do |spec|
     "LICENSE.txt",
     "README.md",
     "CHANGES.txt",
-    "VERSION",
   ]
   spec.require_paths = ["lib"]
 
