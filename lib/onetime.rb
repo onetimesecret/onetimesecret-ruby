@@ -15,20 +15,19 @@ require_relative "onetime/client"
 #   require "onetime"
 #
 #   client = Onetime::Client.new(
-#     username:    "you@example.com",
-#     api_token:   ENV["ONETIME_API_TOKEN"],
-#     api_version: :v2,
+#     base_url:     "https://us.onetimesecret.com",
+#     organization: "on1abc...",
+#     api_token:    ENV["ONETIME_API_TOKEN"],
+#     api_version:  :v2,
 #   )
 #   res = client.secrets.conceal(secret: "hunter2", ttl: 3600)
 #   res.dig("record", "secret", "secret_value")
 module Onetime
   # Convenience constructor mirroring Onetime::Client.new.
   #
-  #   Onetime.client(api_version: :v1, username: "...", api_token: "...")
+  #   Onetime.client(base_url: "https://us.onetimesecret.com",
+  #                  organization: "on1...", api_token: "...")
   def self.client(**options)
     Client.new(**options)
   end
 end
-
-# Historical top-level alias.
-OT = Onetime unless defined?(OT)

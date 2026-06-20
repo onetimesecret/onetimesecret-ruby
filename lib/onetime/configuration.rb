@@ -11,9 +11,9 @@ module Onetime
   # when signed in. The password slot carries your API token.
   #
   # Values fall back to environment variables:
-  #   ONETIME_BASE_URL / ONETIME_HOST     -> base_url
-  #   ONETIME_ORG_EXTID / ONETIME_CUSTID  -> organization
-  #   ONETIME_API_TOKEN / ONETIME_APIKEY  -> api_token
+  #   ONETIME_BASE_URL    -> base_url
+  #   ONETIME_ORG_EXTID   -> organization
+  #   ONETIME_API_TOKEN   -> api_token
   class Configuration
     DEFAULT_API_VERSION  = :v2
     SUPPORTED_VERSIONS   = %i[v1 v2].freeze
@@ -33,22 +33,17 @@ module Onetime
       ca.onetimesecret.com nz.onetimesecret.com
     ].freeze
 
-    attr_accessor :base_url, :api_version, :api_token,
+    attr_accessor :base_url, :api_version, :organization, :api_token,
                   :timeout, :open_timeout, :max_retries,
                   :user_agent, :logger, :transport, :default_headers
 
-    # The HTTP Basic username value (the organization extid).
-    attr_reader :organization
-
-    def initialize(base_url: nil, api_version: nil, organization: nil, username: nil,
+    def initialize(base_url: nil, api_version: nil, organization: nil,
                    api_token: nil, timeout: nil, open_timeout: nil, max_retries: nil,
                    user_agent: nil, logger: nil, transport: nil, default_headers: nil)
-      @base_url        = base_url || ENV["ONETIME_BASE_URL"] || ENV["ONETIME_HOST"]
+      @base_url        = base_url || ENV["ONETIME_BASE_URL"]
       @api_version     = normalize_version(api_version || DEFAULT_API_VERSION)
-      # `username` is accepted as a backward-compatible alias for `organization`.
-      @organization    = organization || username ||
-                         ENV["ONETIME_ORG_EXTID"] || ENV["ONETIME_CUSTID"]
-      @api_token       = api_token || ENV["ONETIME_API_TOKEN"] || ENV["ONETIME_APIKEY"]
+      @organization    = organization || ENV["ONETIME_ORG_EXTID"]
+      @api_token       = api_token || ENV["ONETIME_API_TOKEN"]
       @timeout         = timeout || DEFAULT_TIMEOUT
       @open_timeout    = open_timeout || DEFAULT_OPEN_TIMEOUT
       @max_retries     = max_retries.nil? ? DEFAULT_MAX_RETRIES : max_retries
@@ -57,14 +52,6 @@ module Onetime
       @transport       = transport
       @default_headers = default_headers || {}
     end
-
-    # Backward-compatible alias: the organization extid occupies the HTTP
-    # Basic username slot.
-    def organization=(value)
-      @organization = value
-    end
-    alias username organization
-    alias username= organization=
 
     # True when no credentials are configured. Anonymous clients can still
     # use public and /guest/* endpoints.

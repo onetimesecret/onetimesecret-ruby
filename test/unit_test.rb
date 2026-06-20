@@ -12,16 +12,10 @@ class ConfigurationTest < Minitest::Test
     assert config.anonymous?
   end
 
-  def test_organization_is_basic_auth_username
+  def test_organization_is_the_credential
     config = Onetime::Configuration.new(organization: "on1abc", api_token: "tok")
     assert_equal "on1abc", config.organization
-    assert_equal "on1abc", config.username, "username aliases organization"
     refute config.anonymous?
-  end
-
-  def test_username_is_accepted_as_alias_for_organization
-    config = Onetime::Configuration.new(username: "on1abc", api_token: "tok")
-    assert_equal "on1abc", config.organization
   end
 
   def test_normalizes_version_forms

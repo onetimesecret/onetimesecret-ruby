@@ -186,7 +186,7 @@ lib/
     api/
       v3.rb                       # path/verb maps + native-type handling
       v2.rb                       # path/verb maps + string coercion
-      v1_compat.rb                # legacy OT::API shim
+      v1.rb                       # path/verb maps + legacy form params
 sig/                              # RBS signatures
 ```
 
@@ -201,8 +201,8 @@ sig/                              # RBS signatures
 - **Release**: SemVer, real `CHANGELOG.md` (Keep a Changelog), **RubyGems
   Trusted Publishing** (OIDC) — retire the broken cert-signing flow and
   `jeweler` entirely. Gemspec authored by hand.
-- **Docs**: rewritten `README.md`, usage examples, a **`0.5.x` → `1.0`
-  migration guide**, and self-hosting configuration notes.
+- **Docs**: rewritten `README.md`, usage examples, and self-hosting
+  configuration notes. (No 0.5.x migration guide — see §8, clean break.)
 
 ## 7. Phased Roadmap
 
@@ -212,20 +212,23 @@ sig/                              # RBS signatures
 | **1. Foundation** | New gem skeleton; hand-written gemspec; drop jeweler/drydock/httparty/yajl; `version.rb`; CI matrix; `standard`; Minitest+WebMock; `CHANGELOG.md`; Trusted Publishing | Empty client builds, lints, CI green on 3.1–3.4 |
 | **2. Transport core** | `Net::HTTP` transport (base_url, auth modes, timeouts, retries+backoff, headers/UA); ADR-013 error mapping; optional adapter seam | Unit-tested transport + full error hierarchy |
 | **3. v3 resources** (default) | secrets (conceal/generate/reveal/show/status), receipts (recent/show/update/burn), meta, feedback; guest-route handling; typed result objects | v3 happy-path + error paths covered; contract test passes |
-| **4. v2 + v1** | v2 resources with string→native coercion + anonymous basic auth; **v1 compatibility shim** preserving `OT::API.new`/`get`/`post` | v2 contract test passes; `0.5.x` snippets work via shim |
+| **4. v2 + v1** | v2 resources with string→native coercion + anonymous basic auth; v1 resources (legacy form params/endpoints) as a first-class supported version | v1 and v2 contract tests pass |
 | **5. CLI gem** | New `onetime-cli` gem on Thor; commands `share`/`generate`/`reveal`/`receipt`/`status`; stdin piping; json/yaml output | CLI installs & runs against live API |
 | **6. Docs & 1.0** | README rewrite, RBS, examples, migration guide; tag `1.0.0` | Published to RubyGems via OIDC |
 
 ## 8. Compatibility & Migration
 
-- **`0.5.x` users**: `require "onetime/api"` and `OT::API.new(custid, key)`
-  continue to work via the v1 compat shim (deprecation-warned), so upgrading the
-  gem doesn't break existing scripts immediately.
-- **CLI users**: `onetime` moves to the `onetime-cli` gem; the library gem
-  prints a one-time pointer if `bin/onetime` is invoked. Document the split
-  prominently in the migration guide.
-- **Breaking with intent**: the new object-oriented surface is `1.0`-new; the
-  legacy hash-returning API is available only through the shim.
+`1.0` is a **clean break** from the 0.5.x release (2013). No backward
+compatibility is maintained:
+
+- **No `OT::API` shim**: the legacy `Onetime::API`/`OT::API.new`/`get`/`post`
+  surface and the `OT` top-level alias are removed. `Onetime::Client` is the
+  only interface.
+- **No legacy env vars**: only `ONETIME_BASE_URL`, `ONETIME_ORG_EXTID`, and
+  `ONETIME_API_TOKEN` are read (the old `ONETIME_HOST`/`ONETIME_CUSTID`/
+  `ONETIME_APIKEY` are gone).
+- **CLI users**: `onetime` moves to a separate `onetime-cli` gem; the dead
+  `drydock`-based `bin/onetime` is removed.
 
 ## 9. Open Questions / Risks
 

@@ -93,10 +93,8 @@ Regional API hosts:
 | `open_timeout` | `10`                                           | Connect timeout (seconds)               |
 | `max_retries`  | `2`                                            | Retries for idempotent (GET) requests   |
 
-Environment fallbacks: `base_url` ← `ONETIME_BASE_URL` / `ONETIME_HOST`;
-`organization` ← `ONETIME_ORG_EXTID` / `ONETIME_CUSTID`; `api_token` ←
-`ONETIME_API_TOKEN` / `ONETIME_APIKEY`. `username:` is accepted as a
-backward-compatible alias for `organization:`.
+Environment fallbacks: `base_url` ← `ONETIME_BASE_URL`; `organization` ←
+`ONETIME_ORG_EXTID`; `api_token` ← `ONETIME_API_TOKEN`.
 
 Clients are thread-safe: they hold only configuration and a stateless
 transport, opening a fresh connection per request.
@@ -189,23 +187,6 @@ end
 | `Onetime::TransportError` / `TimeoutError` | network failures |
 
 All inherit from `Onetime::Error`.
-
-## Migrating from 0.5.x
-
-The legacy `Onetime::API` interface still works (now backed by the new
-transport, no HTTParty required) and defaults to API v1:
-
-```ruby
-require "onetime/api"
-# First arg is now the organization extid (was the email custid), and a
-# base_url is required (set here or via ONETIME_BASE_URL / ONETIME_HOST).
-api = OT::API.new("on1abc...", "APITOKEN", base_url: "https://us.onetimesecret.com")
-api.get("/status")
-api.post("/generate", passphrase: "secret")
-api.response.code
-```
-
-New code should prefer `Onetime::Client`.
 
 ## Development
 

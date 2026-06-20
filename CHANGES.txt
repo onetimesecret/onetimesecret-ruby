@@ -3,25 +3,32 @@ ONETIME, CHANGES
 #### 1.0.0.pre.1 (unreleased) #########################
 
 * REWRITE: Modern, zero-dependency client built on stdlib Net::HTTP.
+  A clean break from 0.5.x (2013); no backward compatibility is maintained.
+
 * ADDED: Onetime::Client with secrets/receipts resources and meta methods.
 * ADDED: Support for the v1 and v2 APIs (selectable via api_version).
-* AUTH: HTTP Basic now uses the organization extid (the "on..." identifier
-  at the bottom of the user menu) as the username; `organization:` is the
-  primary option (`username:` kept as an alias).
-* CHANGE: base_url is now required (no default). Region-isolated deployments
-  mean there is no safe default; the apex onetimesecret.com (company website)
-  is rejected with guidance toward regional/self-hosted/custom hosts.
 * ADDED: Typed error hierarchy mapped to the ADR-013 wire format
   ({ error, error_type, ... }) and legacy v1 { message } responses.
 * ADDED: Indifferent-access Onetime::Response wrapper.
 * ADDED: Anonymous / guest endpoint support for v2.
 * ADDED: Retries with exponential backoff for idempotent requests.
 * ADDED: Minitest test suite (unit + real Net::HTTP integration).
+
+* CHANGE: Authentication uses the organization extid (the "on..." identifier
+  at the bottom of the user menu) as the HTTP Basic username, with the API
+  token as the password. Set it via `organization:` / ONETIME_ORG_EXTID.
+* CHANGE: base_url is now required (no default). Region-isolated deployments
+  mean there is no safe default; the apex onetimesecret.com (company website)
+  is rejected with guidance toward regional/self-hosted/custom hosts.
 * CHANGE: Requires Ruby 3.1+.
-* CHANGE: Dropped httparty, drydock, jeweler, and yajl dependencies.
 * CHANGE: The `onetime` CLI moves to a separate `onetime-cli` gem.
-* COMPAT: Legacy Onetime::API (OT::API.new/get/post) preserved as a shim
-  over the new client (defaults to API v1).
+
+* REMOVED: httparty, drydock, jeweler, and yajl dependencies.
+* REMOVED: Legacy Onetime::API / OT::API shim, the OT top-level alias, the
+  `username:` option alias, and the old ONETIME_HOST / ONETIME_CUSTID /
+  ONETIME_APIKEY environment variables.
+* REMOVED: The drydock-based `bin/onetime` executable and the gem signing
+  certificate.
 
 #### 0.5.1 (2013-02-12) ###############################
 
