@@ -1,101 +1,185 @@
-# One-Time Secret 0.5 #
+# OnetimeSecret Ruby Client
 
-**Keep sensitive info out of your chat logs & email.**
+The official Ruby client for the [OnetimeSecret](https://onetimesecret.com)
+API. Share sensitive information through a link that can only be viewed once.
 
-## Basic Usage ##
+- **Zero runtime dependencies** — built entirely on the Ruby standard library
+  (`net/http`, `uri`, `json`), so it drops into any environment without pulling
+  transitive gems.
+- **Supports API v1 and v2** — pick a version per client; the same resource
+  methods work across both.
+- **Ruby 3.1+**.
 
-Use `onetime` to share something you know (a secret phrase, a special link, etc) or to generate a secret (e.g. a temporary password).
+> The `onetime` command-line tool has moved to a separate `onetime-cli` gem so
+> that this library stays dependency-free.
 
-### onetime share ###
+## Installation
 
-You can pipe it:
+```sh
+gem install onetime
+```
 
-    $ echo "I STILL WATCH NIGHT COURT." | onetime
-    https://onetimesecret.com/secret/mc5o2649tva6885wvyspm0flobsasin
+Or in a Gemfile:
 
-You can type it:
+```ruby
+gem "onetime"
+```
 
-    $ onetime
-    Paste secret here (hit control-D to continue):
-    I STILL WATCH NIGHT COURT.
-    https://onetimesecret.com/secret/3djys3b7tridrcvbiprqjejz0c2g07x
+## Quick start
 
-And you can read from a file:
+```ruby
+require "onetime"
 
-    $ <path/2/file onetime
-    https://onetimesecret.com/secret/8f8k3ajhax87ctln3h6y11nsb4vf0wq
+client = Onetime::Client.new(
+  username:    "you@example.com",          # your account email
+  api_token:   ENV["ONETIME_API_TOKEN"],   # API token from your account page
+  api_version: :v2,                        # :v1 or :v2 (default :v2)
+)
 
-*Note that we don't use `cat` in that example! We don't want to provoke the [ire of Randal L. Schwartz](http://partmaps.org/era/unix/award.html).*
+# Conceal a secret you already have
+res = client.secrets.conceal(secret: "hunter2", ttl: 3600, passphrase: "pw")
+res.dig("record", "receipt", "identifier")  # the receipt (creator) key
+res.dig("record", "secret", "identifier")   # the secret (recipient) key
 
+# Generate a random secret server-side
+client.secrets.generate(ttl: 86_400)
 
-### onetime generate ###
+# Reveal (consume) a secret — one-time only
+secret = client.secrets.reveal("abc123secretkey", passphrase: "pw")
+secret.dig("record", "secret_value")
 
-    $ onetime generate
-    Your secret: CttenFwzVpjs
-    https://onetimesecret.com/secret/er5djg1wodsp5m32oyym489bnuhsfp6
+# Service status (works on v1 and v2)
+client.status
+```
 
+### Configuration
 
-### onetime get ###
+| Option         | Default                        | Notes                                   |
+|----------------|--------------------------------|-----------------------------------------|
+| `base_url`     | `https://onetimesecret.com`    | Override for self-hosted installs       |
+| `api_version`  | `:v2`                          | `:v1` or `:v2`                          |
+| `username`     | `ENV["ONETIME_CUSTID"]`        | Account email                           |
+| `api_token`    | `ENV["ONETIME_APIKEY"]`        | API token                               |
+| `timeout`      | `30`                           | Read timeout (seconds)                  |
+| `open_timeout` | `10`                           | Connect timeout (seconds)               |
+| `max_retries`  | `2`                            | Retries for idempotent (GET) requests   |
 
-You can retrieve a secret too:
+`base_url` also reads `ENV["ONETIME_HOST"]`.
 
-    $ onetime get mc5o2649tva6885wvyspm0flobsasin
-    I STILL WATCH NIGHT COURT.
+Clients are thread-safe: they hold only configuration and a stateless
+transport, opening a fresh connection per request.
 
-The URI works too:
+## Anonymous and guest usage
 
-    $ onetime get https://onetimesecret.com/secret/mc5o2649tva6885wvyspm0flobsasin
-    I STILL WATCH NIGHT COURT.
+A client created without credentials is anonymous and can use public and guest
+endpoints:
 
-## Output Format ##
+```ruby
+guest = Onetime::Client.new(api_version: :v2)            # no credentials
+guest.secrets.conceal(secret: "no account needed", guest: true)
+```
 
-`onetime` also supports YAML, JSON, and to a limited extent CSV outputs. Specify the format using the `-f ` global option:
+## Resources
 
-    $ onetime -f yaml generate
-    ---
-    value: MhYcuge9VxtX
-    metadata_key: 4j1122kpd6clemp80gpobu9xfxsp7zu
-    secret_key: 8f8k3ajhax87ctln3h6y11nsb4vf0wq
-    ttl: 172800
-    passphrase_required: false
+### `client.secrets`
 
-## Installation ###
+| Method | v1 | v2 |
+|---|----|----|
+| `conceal(secret:, ttl:, passphrase:, recipient:, share_domain:)` | yes | yes |
+| `generate(ttl:, passphrase:, recipient:, share_domain:)` | yes | yes |
+| `reveal(key, passphrase:, continue:)` | yes | yes |
+| `show(key)` | — | yes |
+| `status(key)` | — | yes |
+| `status_list(keys)` | — | yes |
 
-    $ [sudo] gem install onetime
+`conceal` is also available as `share`. `reveal`/`show` accept either a bare
+key or a full secret URL.
 
-    However, in order to be sure the code you're installing hasn't been tampered with, it's recommended that you verify the signiture[http://docs.rubygems.org/read/chapter/21]. To do this, you need to add my public key as a trusted certificate (you only need to do this once):
+### `client.receipts`
 
-        # Add the public key as a trusted certificate
-        # (You only need to do this once)
-        $ curl -O https://raw.github.com/onetimesecret/onetime-ruby/master/gem-public_cert.pem
-        $ gem cert --add gem-public_cert.pem
+| Method | v1 | v2 |
+|---|----|----|
+| `show(key)` | yes | yes |
+| `recent` | yes | yes |
+| `burn(key, passphrase:, continue:)` | yes | yes |
+| `update(key, memo:)` | — | yes |
 
-    Then, when install the gem, do so with high security:
+### Meta
 
-        $ gem install onetime -P HighSecurity
+`client.status` (v1 & v2), `client.version` / `client.supported_locales`
+(v2 only), `client.authcheck` (v1 only).
 
-    If you don't add the public key, you'll see an error like "Couldn't verify data signature". If you're still having trouble let me know and I'll give you a hand.
+## Responses
 
-## More Info ##
+Resource methods return an `Onetime::Response` with indifferent (String or
+Symbol) key access:
 
-* [API docs](https://onetimesecret.com/docs/api)
-* [Codes](https://github.com/onetimesecret/onetime-ruby)
-* [Rubgems](https://rubygems.org/gems/onetime)
-* [One-Time Secret](https://onetimesecret.com/)
+```ruby
+res = client.secrets.conceal(secret: "hi")
+res["record"]                                   # Hash
+res.dig(:record, :secret, :secret_value)        # deep access
+res.success?                                     # 2xx?
+res.http_status                                  # Integer
+res.to_h                                         # the parsed body
+```
 
-See also:
+> v1 serializes all fields as strings; v2 nests data under `record`/`details`.
+> See the [API docs](https://docs.onetimesecret.com/) for response shapes.
 
-    $ onetime -h
-    $ onetime show-commands
-    $ onetime share -h
-    $ onetime generate -h
+## Errors
 
-## Thanks ##
+HTTP errors (status >= 400) raise typed exceptions following the API's
+ADR-013 error contract (`{ error:, error_type:, ... }`):
 
-* Kyle Dawkins for the [perl lib](https://github.com/quile/onetime-perl)
-* Drew Carey for [tweeting about us](https://twitter.com/DrewFromTV/status/142730130689761280)
+```ruby
+begin
+  client.secrets.reveal("missing")
+rescue Onetime::NotFoundError => e
+  e.message      # human-readable message ("error" field)
+  e.error_type   # machine-readable type ("RecordNotFound")
+  e.http_status  # 404
+rescue Onetime::RateLimitError => e
+  e.retry_after
+rescue Onetime::APIError => e
+  # any other API error
+end
+```
 
+| Exception | When |
+|---|---|
+| `Onetime::BadRequestError` | 400 / `FormError` (see `#field`) |
+| `Onetime::AuthenticationError` | 401 |
+| `Onetime::ForbiddenError` | 403 / `Forbidden`, `GuestRoutesDisabled` |
+| `Onetime::EntitlementError` | `EntitlementRequired` (see `#entitlement`) |
+| `Onetime::NotFoundError` | 404 / `RecordNotFound` |
+| `Onetime::RateLimitError` | 429 / `LimitExceeded` (see `#retry_after`) |
+| `Onetime::ServerError` | 5xx |
+| `Onetime::TransportError` / `TimeoutError` | network failures |
 
-## License ##
+All inherit from `Onetime::Error`.
 
-See LICENSE.txt
+## Migrating from 0.5.x
+
+The legacy `Onetime::API` interface still works (now backed by the new
+transport, no HTTParty required) and defaults to API v1:
+
+```ruby
+require "onetime/api"
+api = OT::API.new("you@example.com", "APITOKEN")
+api.get("/status")
+api.post("/generate", passphrase: "secret")
+api.response.code
+```
+
+New code should prefer `Onetime::Client`.
+
+## Development
+
+```sh
+bundle install
+rake test
+```
+
+## License
+
+See [LICENSE.txt](LICENSE.txt).
