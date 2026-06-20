@@ -42,8 +42,10 @@ The library is a single ~140-line file plus a CLI, last released **2013-02-12**.
 - **API v1 only**: `base_uri` is hardcoded; `api_path` forces `v#{apiversion}`
   defaulting to `1`. Endpoints are the legacy `/share`, `/generate`,
   `/secret/:key`, `/metadata/:key`, `/status`.
-- **Stale auth model**: HTTP Basic with `custid` + `key`. The server now
-  authenticates an email/username + an **API token** (`cust.apitoken?`).
+- **Stale auth model**: HTTP Basic with `custid` (email) + `key`. The server
+  now authenticates the **organization extid** (the `on...` identifier shown at
+  the bottom of the user menu) in the username slot + an **API token** as the
+  password.
 - **No engineering hygiene**: no tests, no CI, no RuboCop, no type signatures,
   no SemVer discipline. Gem signing points at a non-existent
   `/mnt/gem/gem-private_key.pem`.
@@ -113,18 +115,18 @@ truth for request/response shapes and should drive contract tests.
 require "onetime"
 
 client = Onetime::Client.new(
-  base_url:   "https://onetimesecret.com",  # default; override for self-hosted
-  api_version: :v3,                          # :v3 (default), :v2, :v1 (shim)
-  username:   "you@example.com",             # email / custid
-  api_token:  ENV["ONETIME_API_TOKEN"],      # HTTP Basic token (v2) ...
-  # session:  "...",                         # ... or session for v3 authed routes
-  timeout:    10,
-  max_retries: 2,                            # idempotent requests only
+  base_url:     "https://us.onetimesecret.com", # region/self-hosted/custom (required)
+  api_version:  :v3,                            # :v3 (default), :v2, :v1 (shim)
+  organization: "on1abc...",                    # organization extid (HTTP Basic username)
+  api_token:    ENV["ONETIME_API_TOKEN"],       # HTTP Basic token (v2) ...
+  # session:    "...",                          # ... or session for v3 authed routes
+  timeout:      10,
+  max_retries:  2,                              # idempotent requests only
 )
 
 # Conceal a secret you already have
 receipt = client.secrets.conceal(secret: "hunter2", ttl: 3600, passphrase: "pw")
-receipt.secret_url      # => "https://onetimesecret.com/secret/abc..."
+receipt.secret_url      # => "https://us.onetimesecret.com/secret/abc..."
 receipt.receipt_url
 receipt.ttl             # => 3600 (Integer, regardless of v2/v3)
 

@@ -5,6 +5,12 @@ ONETIME, CHANGES
 * REWRITE: Modern, zero-dependency client built on stdlib Net::HTTP.
 * ADDED: Onetime::Client with secrets/receipts resources and meta methods.
 * ADDED: Support for the v1 and v2 APIs (selectable via api_version).
+* AUTH: HTTP Basic now uses the organization extid (the "on..." identifier
+  at the bottom of the user menu) as the username; `organization:` is the
+  primary option (`username:` kept as an alias).
+* CHANGE: base_url is now required (no default). Region-isolated deployments
+  mean there is no safe default; the apex onetimesecret.com (company website)
+  is rejected with guidance toward regional/self-hosted/custom hosts.
 * ADDED: Typed error hierarchy mapped to the ADR-013 wire format
   ({ error, error_type, ... }) and legacy v1 { message } responses.
 * ADDED: Indifferent-access Onetime::Response wrapper.

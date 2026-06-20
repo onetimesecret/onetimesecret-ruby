@@ -125,7 +125,9 @@ module Onetime
       default_headers.merge(headers).each { |k, v| request[k] = v }
 
       unless @config.anonymous?
-        request.basic_auth(@config.username, @config.api_token)
+        # HTTP Basic: the organization extid occupies the username slot,
+        # the API token occupies the password slot.
+        request.basic_auth(@config.organization, @config.api_token)
       end
 
       if form

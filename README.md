@@ -31,9 +31,10 @@ gem "onetime"
 require "onetime"
 
 client = Onetime::Client.new(
-  username:    "you@example.com",          # your account email
-  api_token:   ENV["ONETIME_API_TOKEN"],   # API token from your account page
-  api_version: :v2,                        # :v1 or :v2 (default :v2)
+  base_url:     "https://us.onetimesecret.com", # your region's API host (required)
+  organization: "on1abc...",                    # organization extid (see below)
+  api_token:    ENV["ONETIME_API_TOKEN"],       # API token from your account page
+  api_version:  :v2,                            # :v1 or :v2 (default :v2)
 )
 
 # Conceal a secret you already have
@@ -52,19 +53,50 @@ secret.dig("record", "secret_value")
 client.status
 ```
 
+### Authentication
+
+Authentication uses HTTP Basic, where the **organization extid** is the
+username and your **API token** is the password.
+
+The organization extid is the identifier beginning with `on` shown (with a
+copy button) at the bottom of the user menu when you are signed in. It is no
+longer your email address.
+
+### Base URL (required)
+
+`base_url` must be the API host for your region, your self-hosted domain, or
+your custom domain. There is no default: deployments are region-isolated for
+data sovereignty, so the client cannot guess one for you.
+
+Regional API hosts:
+
+| Region | Host |
+|---|---|
+| United States | `https://us.onetimesecret.com` |
+| Europe | `https://eu.onetimesecret.com` |
+| United Kingdom | `https://uk.onetimesecret.com` |
+| Canada | `https://ca.onetimesecret.com` |
+| Aotearoa New Zealand | `https://nz.onetimesecret.com` |
+
+> The apex `onetimesecret.com` is the company website, not an API host, and
+> is rejected with a helpful error.
+
 ### Configuration
 
-| Option         | Default                        | Notes                                   |
-|----------------|--------------------------------|-----------------------------------------|
-| `base_url`     | `https://onetimesecret.com`    | Override for self-hosted installs       |
-| `api_version`  | `:v2`                          | `:v1` or `:v2`                          |
-| `username`     | `ENV["ONETIME_CUSTID"]`        | Account email                           |
-| `api_token`    | `ENV["ONETIME_APIKEY"]`        | API token                               |
-| `timeout`      | `30`                           | Read timeout (seconds)                  |
-| `open_timeout` | `10`                           | Connect timeout (seconds)               |
-| `max_retries`  | `2`                            | Retries for idempotent (GET) requests   |
+| Option         | Default                                       | Notes                                   |
+|----------------|-----------------------------------------------|-----------------------------------------|
+| `base_url`     | — (**required**)                              | Region/self-hosted/custom domain        |
+| `api_version`  | `:v2`                                          | `:v1` or `:v2`                          |
+| `organization` | `ENV["ONETIME_ORG_EXTID"]`                     | Organization extid (`on...`)            |
+| `api_token`    | `ENV["ONETIME_API_TOKEN"]`                     | API token                               |
+| `timeout`      | `30`                                           | Read timeout (seconds)                  |
+| `open_timeout` | `10`                                           | Connect timeout (seconds)               |
+| `max_retries`  | `2`                                            | Retries for idempotent (GET) requests   |
 
-`base_url` also reads `ENV["ONETIME_HOST"]`.
+Environment fallbacks: `base_url` ← `ONETIME_BASE_URL` / `ONETIME_HOST`;
+`organization` ← `ONETIME_ORG_EXTID` / `ONETIME_CUSTID`; `api_token` ←
+`ONETIME_API_TOKEN` / `ONETIME_APIKEY`. `username:` is accepted as a
+backward-compatible alias for `organization:`.
 
 Clients are thread-safe: they hold only configuration and a stateless
 transport, opening a fresh connection per request.
@@ -75,7 +107,7 @@ A client created without credentials is anonymous and can use public and guest
 endpoints:
 
 ```ruby
-guest = Onetime::Client.new(api_version: :v2)            # no credentials
+guest = Onetime::Client.new(base_url: "https://us.onetimesecret.com")  # no credentials
 guest.secrets.conceal(secret: "no account needed", guest: true)
 ```
 
@@ -165,7 +197,9 @@ transport, no HTTParty required) and defaults to API v1:
 
 ```ruby
 require "onetime/api"
-api = OT::API.new("you@example.com", "APITOKEN")
+# First arg is now the organization extid (was the email custid), and a
+# base_url is required (set here or via ONETIME_BASE_URL / ONETIME_HOST).
+api = OT::API.new("on1abc...", "APITOKEN", base_url: "https://us.onetimesecret.com")
 api.get("/status")
 api.post("/generate", passphrase: "secret")
 api.response.code

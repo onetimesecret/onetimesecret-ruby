@@ -44,7 +44,7 @@ class TransportIntegrationTest < Minitest::Test
     Onetime::Client.new(
       base_url: "http://127.0.0.1:#{@port}",
       api_version: :v2,
-      username: "user@example.com",
+      organization: "on1example",
       api_token: "token123",
       **opts
     )
@@ -57,8 +57,9 @@ class TransportIntegrationTest < Minitest::Test
     assert_equal "POST /api/v2/secret/conceal HTTP/1.1", @request_line.chomp
     assert_equal "application/json", @headers["content-type"]
     assert_equal "application/json", @headers["accept"]
-    # base64("user@example.com:token123")
-    expected_auth = "Basic #{["user@example.com:token123"].pack('m0')}"
+    # HTTP Basic: organization extid in the username slot, token as password.
+    # base64("on1example:token123")
+    expected_auth = "Basic #{["on1example:token123"].pack('m0')}"
     assert_equal expected_auth, @headers["authorization"]
     assert_match %r{onetime-ruby/}, @headers["user-agent"]
     assert_match %r{\Aruby:}, @headers["x-onetime-client"]

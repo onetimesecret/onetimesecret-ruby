@@ -3,11 +3,25 @@
 require_relative "test_helper"
 
 class ConfigurationTest < Minitest::Test
+  REGION = "https://us.onetimesecret.com"
+
   def test_defaults
     config = Onetime::Configuration.new
-    assert_equal "https://onetimesecret.com", config.base_url
+    assert_nil config.base_url, "there is no safe default base_url (data residency)"
     assert_equal :v2, config.api_version
     assert config.anonymous?
+  end
+
+  def test_organization_is_basic_auth_username
+    config = Onetime::Configuration.new(organization: "on1abc", api_token: "tok")
+    assert_equal "on1abc", config.organization
+    assert_equal "on1abc", config.username, "username aliases organization"
+    refute config.anonymous?
+  end
+
+  def test_username_is_accepted_as_alias_for_organization
+    config = Onetime::Configuration.new(username: "on1abc", api_token: "tok")
+    assert_equal "on1abc", config.organization
   end
 
   def test_normalizes_version_forms
@@ -18,7 +32,28 @@ class ConfigurationTest < Minitest::Test
 
   def test_rejects_unsupported_version
     assert_raises(Onetime::ConfigurationError) do
-      Onetime::Configuration.new(api_version: :v9).validate!
+      Onetime::Configuration.new(base_url: REGION, api_version: :v9).validate!
+    end
+  end
+
+  def test_base_url_is_required
+    err = assert_raises(Onetime::ConfigurationError) { Onetime::Configuration.new.validate! }
+    assert_match(/base_url is required/, err.message)
+  end
+
+  def test_rejects_apex_domain_as_base_url
+    %w[https://onetimesecret.com https://www.onetimesecret.com].each do |apex|
+      err = assert_raises(Onetime::ConfigurationError) do
+        Onetime::Configuration.new(base_url: apex).validate!
+      end
+      assert_match(/company website/, err.message)
+    end
+  end
+
+  def test_accepts_regional_self_hosted_and_custom_domains
+    %w[https://us.onetimesecret.com https://eu.onetimesecret.com
+       https://secrets.mycompany.com http://localhost:3000].each do |url|
+      assert Onetime::Configuration.new(base_url: url).validate!
     end
   end
 
@@ -30,10 +65,10 @@ class ConfigurationTest < Minitest::Test
 
   def test_rejects_partial_credentials
     assert_raises(Onetime::ConfigurationError) do
-      Onetime::Configuration.new(username: "u@e.com").validate!
+      Onetime::Configuration.new(base_url: REGION, organization: "on1abc").validate!
     end
     assert_raises(Onetime::ConfigurationError) do
-      Onetime::Configuration.new(api_token: "tok").validate!
+      Onetime::Configuration.new(base_url: REGION, api_token: "tok").validate!
     end
   end
 
