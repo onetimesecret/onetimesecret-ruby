@@ -1,4 +1,5 @@
 Gemfile.lock
+*.gem
 .onetime
 tmp
 .DS_Store
