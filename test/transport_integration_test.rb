@@ -134,3 +134,55 @@ class TransportAnonymousTest < Minitest::Test
     assert_nil @headers["authorization"]
   end
 end
+
+# A configured logger receives one debug line per request. The log call sits in
+# the real #perform path, so this needs an actual round trip rather than a
+# transport double.
+class TransportLoggingTest < Minitest::Test
+  # Records level/message pairs instead of writing anywhere. Only #debug is
+  # defined: a call at any other level should surface here as a failure rather
+  # than pass silently.
+  class RecordingLogger
+    attr_reader :messages
+
+    def initialize
+      @messages = []
+    end
+
+    def debug(message)
+      @messages << [:debug, message]
+    end
+  end
+
+  def setup
+    @server = TCPServer.new("127.0.0.1", 0)
+    @port = @server.addr[1]
+    @thread = Thread.new do
+      socket = @server.accept
+      socket.gets
+      while (line = socket.gets) && line != "\r\n"; end
+      body = "{}"
+      socket.write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n")
+      socket.write("Content-Length: #{body.bytesize}\r\nConnection: close\r\n\r\n#{body}")
+      socket.close
+    end
+  end
+
+  def teardown
+    @thread.join(2)
+    @server.close
+  end
+
+  def test_configured_logger_receives_the_request_line
+    logger = RecordingLogger.new
+    Onetime::Client.new(
+      base_url: "http://127.0.0.1:#{@port}", api_version: :v2, logger: logger
+    ).status
+    @thread.join(2)
+
+    assert_equal 1, logger.messages.size
+    level, message = logger.messages.first
+    assert_equal :debug, level
+    assert_equal "[onetime] GET http://127.0.0.1:#{@port}/api/v2/status", message
+  end
+end

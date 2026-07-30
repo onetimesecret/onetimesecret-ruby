@@ -118,6 +118,7 @@ Regional API hosts:
 | `timeout`      | `30`                                           | Read timeout (seconds)                  |
 | `open_timeout` | `10`                                           | Connect timeout (seconds)               |
 | `max_retries`  | `2`                                            | Retries for idempotent (GET) requests   |
+| `logger`       | `nil`                                          | Receives per-request `debug` lines      |
 
 Environment fallbacks: `base_url` ← `ONETIME_BASE_URL`; `customer` ←
 `ONETIME_CUSTOMER_EXTID`; `api_token` ← `ONETIME_API_TOKEN`.
