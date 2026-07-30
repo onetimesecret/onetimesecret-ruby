@@ -10,13 +10,12 @@
 
 ## Version history and install instructions
 
-The release before 0.6.0 is **0.5.1 (2013-02-12)**, the old `drydock`-based
-command-line tool: the same gem, but an API surface with nothing in common with
-the current one. `gem "onetime", "~> 0.6"` is therefore the documented form,
-since the constraint is what keeps a resolver from falling back to 0.5.1.
+Prior to 0.6.0 there was a long gap to the next most recent release which is 
+**0.5.1 (2013-02-12)**, the old `drydock`-based command-line tool: the same 
+gem. Consequently, all documentation references `gem "onetime", "~> 0.6"`, as 
+this pessimistic constraint is what prevents package resolvers from falling 
+back to the obsolete 0.5.1 release.
 
-Point integrators at a released version rather than `branch: master`. A moving
-branch means running whatever commit landed last.
 
 ## One-time setup: Trusted Publishing
 
@@ -38,7 +37,7 @@ against the **gem** (`onetime`) but points at the **repository**
 
 ## Cutting a release
 
-1. Make sure `master` is green in CI.
+1. Make sure `main` is green in CI.
 2. Set the version in `lib/onetime/version.rb` (single source of truth — the
    gemspec reads it, and the release workflow checks the tag against it).
 3. Update `CHANGES.txt`: replace the `(unreleased …)` marker on the top
@@ -48,7 +47,7 @@ against the **gem** (`onetime`) but points at the **repository**
 
    ```sh
    git tag -a v0.6.0 -m "onetime 0.6.0"
-   git push origin master
+   git push origin main
    git push origin v0.6.0
    ```
 
