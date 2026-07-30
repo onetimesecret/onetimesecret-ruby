@@ -23,13 +23,6 @@ ONETIME, CHANGES
   that don't match the "ur..." extid shape are rejected immediately, with a
   message that says where to find the right one.
 
-* ADDED: unowned-response detection (Onetime::Ownership, on_unowned:).
-  When a client that sent credentials receives a record the server marked
-  anonymous — the signature of credentials that were accepted but not
-  honoured — the client warns once (default), raises
-  Onetime::UnownedResponseError (on_unowned: :raise), or stays quiet
-  (:ignore). Guest-route calls are exempt.
-
 * ADDED: Release workflow (.github/workflows/release.yml) publishing to
   RubyGems via Trusted Publishing on a v* tag, with a tag/version guard,
   plus docs/releasing.md.

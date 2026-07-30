@@ -11,8 +11,7 @@ module Onetime
   # in. The password slot carries your API token.
   #
   # #validate! checks the extid's format, so a value of the wrong kind fails
-  # at construction rather than as an opaque 401 — or as a secret the server
-  # records as anonymous (see Onetime::Ownership).
+  # at construction rather than as an opaque 401.
   #
   # Values fall back to environment variables:
   #   ONETIME_BASE_URL        -> base_url
@@ -24,12 +23,6 @@ module Onetime
     DEFAULT_TIMEOUT      = 30  # read timeout, seconds
     DEFAULT_OPEN_TIMEOUT = 10  # connect timeout, seconds
     DEFAULT_MAX_RETRIES  = 2   # retries for idempotent requests
-    DEFAULT_ON_UNOWNED   = :warn # see #on_unowned
-
-    # What to do when a request made *with* credentials comes back describing
-    # a record the server recorded as anonymous — the signature of credentials
-    # that were sent but not honoured.
-    ON_UNOWNED_MODES = %i[warn raise ignore].freeze
 
     # A customer extid is a short, opaque, case-insensitive identifier that
     # always begins with "ur" — e.g. "ur1abc23def".
@@ -56,13 +49,11 @@ module Onetime
 
     attr_accessor :base_url, :api_version, :customer, :api_token,
                   :timeout, :open_timeout, :max_retries,
-                  :user_agent, :logger, :transport, :default_headers,
-                  :on_unowned
+                  :user_agent, :logger, :transport, :default_headers
 
     def initialize(base_url: nil, api_version: nil, customer: nil,
                    api_token: nil, timeout: nil, open_timeout: nil, max_retries: nil,
-                   user_agent: nil, logger: nil, transport: nil, default_headers: nil,
-                   on_unowned: nil)
+                   user_agent: nil, logger: nil, transport: nil, default_headers: nil)
       @base_url        = base_url || ENV["ONETIME_BASE_URL"]
       @api_version     = normalize_version(api_version || DEFAULT_API_VERSION)
       @customer    = customer || ENV["ONETIME_CUSTOMER_EXTID"]
@@ -74,9 +65,6 @@ module Onetime
       @logger          = logger
       @transport       = transport
       @default_headers = default_headers || {}
-      # .to_s first: an Integer (or anything else) has no #to_sym, and a
-      # NoMethodError here would pre-empt validate_on_unowned!'s useful message.
-      @on_unowned      = (on_unowned || DEFAULT_ON_UNOWNED).to_s.to_sym
     end
 
     # True when no credentials are configured. Anonymous clients can still
@@ -94,7 +82,6 @@ module Onetime
       validate_api_version!
       validate_base_url!
       validate_credentials!
-      validate_on_unowned!
       self
     end
 
@@ -146,7 +133,7 @@ module Onetime
     end
 
     # Catch an identifier of the wrong kind at construction time rather than
-    # as a 401 — or as a silently unowned secret — several calls later.
+    # as a 401 several calls later.
     def validate_customer_format!
       value = customer.to_s
       return if CUSTOMER_EXTID_PATTERN.match?(value)
@@ -155,14 +142,6 @@ module Onetime
             "customer #{value.inspect} is not a customer extid: extids begin " \
             'with "ur" (e.g. "ur1abc23def"). ' \
             "#{CUSTOMER_EXTID_HINT}"
-    end
-
-    def validate_on_unowned!
-      return if ON_UNOWNED_MODES.include?(on_unowned)
-
-      raise ConfigurationError,
-            "Unsupported on_unowned #{on_unowned.inspect}; " \
-            "supported: #{ON_UNOWNED_MODES.join(', ')}"
     end
 
     def normalize_version(version)
