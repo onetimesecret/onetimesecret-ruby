@@ -7,7 +7,9 @@ name: Release
 # configured once at
 # https://rubygems.org/gems/onetime/trusted_publishers
 # (repository onetimesecret/onetime-ruby, workflow release.yml,
-# environment rubygems). See docs/releasing.md.
+# environment rubygems.org). The environment name below must match that
+# record exactly — RubyGems compares it to the OIDC token's `environment`
+# claim as a plain string. See docs/releasing.md.
 
 on:
   push:
@@ -21,7 +23,9 @@ jobs:
   release:
     name: Build and publish
     runs-on: ubuntu-latest
-    environment: rubygems
+    environment:
+      name: rubygems.org
+      url: https://rubygems.org/gems/onetime
     permissions:
       contents: write # create the GitHub release
       id-token: write # mint the OIDC token RubyGems verifies

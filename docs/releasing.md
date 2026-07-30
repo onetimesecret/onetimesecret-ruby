@@ -26,14 +26,22 @@ owner of the gem:
 1. Go to <https://rubygems.org/gems/onetime/trusted_publishers> → **Create**.
 2. Repository: `onetimesecret/onetime-ruby`.
 3. Workflow filename: `release.yml`.
-4. Environment: `rubygems`.
-5. In GitHub, create the matching `rubygems` environment
-   (Settings → Environments) and add whatever reviewers/branch restrictions
-   you want gating a publish.
+4. Environment: `rubygems.org`.
+5. In GitHub, the matching `rubygems.org` environment
+   (Settings → Environments) is created automatically the first time the
+   workflow runs. Add whatever reviewers/branch restrictions you want gating
+   a publish.
 
 Note the asymmetry in the steps above: the trusted publisher is registered
 against the **gem** (`onetime`) but points at the **repository**
 (`onetime-ruby`).
+
+The environment name is compared as a plain string against the OIDC token's
+`environment` claim, so `environment:` in `release.yml` and the RubyGems
+record must agree character for character. A mismatch fails the publish step
+with `No trusted publisher configured for this workflow found ... for
+audience rubygems.org` — the `rubygems.org` there is the *audience* claim,
+which is always that value and is not the environment.
 
 ## Cutting a release
 
