@@ -20,8 +20,9 @@ module Onetime
   #   client.receipts.recent
   #   client.status
   #
-  # A client is safe to share across threads: it holds only configuration and
-  # a stateless transport, and creates a fresh Net::HTTP connection per request.
+  # A client is safe to share across threads: it holds configuration, a
+  # stateless transport, and a mutex-guarded flag for the once-only unowned
+  # warning, and creates a fresh Net::HTTP connection per request.
   class Client
     # Explains a successful-but-unowned response. Long on purpose: it is the
     # only signal the caller gets that their credentials were ignored.
@@ -43,6 +44,8 @@ module Onetime
       @config = config || Configuration.new(**options)
       @config.validate!
       @transport = @config.transport || Transport.new(@config)
+      @unowned_warned = false
+      @unowned_lock = Mutex.new
     end
 
     def api_version
@@ -122,11 +125,15 @@ module Onetime
       warn_unowned
     end
 
-    # Once per client: enough to be noticed, not enough to flood a log.
+    # Once per client: enough to be noticed, not enough to flood a log. The
+    # claim-and-set is synchronized so concurrent requests on a shared client
+    # warn exactly once rather than racing.
     def warn_unowned
-      return if @unowned_warned
+      claimed = @unowned_lock.synchronize do
+        @unowned_warned ? false : (@unowned_warned = true)
+      end
+      return unless claimed
 
-      @unowned_warned = true
       message = "[onetime] #{UNOWNED_WARNING}"
       config.logger ? config.logger.warn(message) : Kernel.warn(message)
     end

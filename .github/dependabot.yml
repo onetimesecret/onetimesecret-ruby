@@ -1,0 +1,11 @@
+version: 2
+
+updates:
+  # The release workflow pins its actions to commit SHAs (a moved upstream tag
+  # must not be able to replace code that can publish the gem). Pins go stale
+  # silently, so let Dependabot move them and record the version in the
+  # trailing comment it rewrites.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

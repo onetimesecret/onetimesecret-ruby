@@ -82,6 +82,24 @@ class ClientUnownedResponseTest < Minitest::Test
     assert_match(/organization extid/, logger.warnings.first)
   end
 
+  # Clients are documented as shareable across threads, so the once-only
+  # warning has to hold when several threads trip it at the same time.
+  def test_warns_once_across_concurrent_requests
+    client, logger = build(data: ANON_BODY)
+    barrier = Queue.new
+
+    threads = 12.times.map do
+      Thread.new do
+        barrier.pop
+        client.secrets.conceal(secret: "hi")
+      end
+    end
+    12.times { barrier << :go }
+    threads.each(&:join)
+
+    assert_equal 1, logger.warnings.size
+  end
+
   def test_raises_when_configured_to
     client, = build(data: ANON_BODY, on_unowned: :raise)
 

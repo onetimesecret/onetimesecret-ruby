@@ -81,7 +81,9 @@ module Onetime
       @logger          = logger
       @transport       = transport
       @default_headers = default_headers || {}
-      @on_unowned      = (on_unowned || DEFAULT_ON_UNOWNED).to_sym
+      # .to_s first: an Integer (or anything else) has no #to_sym, and a
+      # NoMethodError here would pre-empt validate_on_unowned!'s useful message.
+      @on_unowned      = (on_unowned || DEFAULT_ON_UNOWNED).to_s.to_sym
     end
 
     # True when no credentials are configured. Anonymous clients can still

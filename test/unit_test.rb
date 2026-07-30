@@ -133,6 +133,21 @@ class ConfigurationTest < Minitest::Test
   def test_on_unowned_defaults_to_warn
     assert_equal :warn, Onetime::Configuration.new.on_unowned
   end
+
+  def test_on_unowned_accepts_strings
+    assert_equal :raise, Onetime::Configuration.new(on_unowned: "raise").on_unowned
+  end
+
+  # A non-Symbol/String has no #to_sym; the caller should still get the
+  # supported-modes message rather than a NoMethodError.
+  def test_non_symbolizable_on_unowned_still_raises_configuration_error
+    [3, 4.2, [:warn]].each do |value|
+      err = assert_raises(Onetime::ConfigurationError) do
+        Onetime::Configuration.new(base_url: REGION, on_unowned: value).validate!
+      end
+      assert_match(/supported: warn, raise, ignore/, err.message)
+    end
+  end
 end
 
 class ResponseTest < Minitest::Test
