@@ -27,10 +27,17 @@ owner of the gem:
 2. Repository: `onetimesecret/onetime-ruby`.
 3. Workflow filename: `release.yml`.
 4. Environment: `rubygems.org`.
-5. In GitHub, the matching `rubygems.org` environment
-   (Settings → Environments) is created automatically the first time the
-   workflow runs. Add whatever reviewers/branch restrictions you want gating
-   a publish.
+5. In GitHub (Settings → Environments), gate the matching `rubygems.org`
+   environment: restrict its deployment branches to `main` and the `v*` tags,
+   and add required reviewers if you want a human in the loop. Do this even
+   though the environment appears on its own — referencing a name in a
+   workflow auto-creates it *unprotected*, so an environment that exists is
+   not evidence that anything is gating it.
+
+   This is the only control on the release job. That job holds `id-token:
+   write` (it mints a RubyGems publishing token) and `contents: write`, and
+   it runs on any `v*` tag, from any ref, until a branch policy says
+   otherwise.
 
 Note the asymmetry in the steps above: the trusted publisher is registered
 against the **gem** (`onetime`) but points at the **repository**
