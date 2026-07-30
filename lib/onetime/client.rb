@@ -2,6 +2,7 @@
 
 require_relative "configuration"
 require_relative "transport"
+require_relative "ownership"
 require_relative "resources/secrets"
 require_relative "resources/receipts"
 
@@ -10,7 +11,7 @@ module Onetime
   #
   #   client = Onetime::Client.new(
   #     base_url:     "https://us.onetimesecret.com",
-  #     organization: "on1abc...",
+  #     organization: "on1abc23def", # organization extid, not a UUID
   #     api_token:    ENV["ONETIME_API_TOKEN"],
   #     api_version:  :v2,           # :v1 or :v2
   #   )
@@ -22,6 +23,18 @@ module Onetime
   # A client is safe to share across threads: it holds only configuration and
   # a stateless transport, and creates a fresh Net::HTTP connection per request.
   class Client
+    # Explains a successful-but-unowned response. Long on purpose: it is the
+    # only signal the caller gets that their credentials were ignored.
+    UNOWNED_WARNING = <<~MSG.gsub("\n", " ").strip
+      The server recorded this secret as anonymous even though this client sent
+      credentials, so it does not belong to your organization and will not
+      appear in your account. The credentials were most likely not accepted:
+      check that `organization` is your organization extid (the "on…"
+      identifier at the bottom of the user menu, not an internal UUID) and that
+      the API token belongs to that organization. Pass `on_unowned: :raise` to
+      turn this into an exception, or `:ignore` to silence it.
+    MSG
+
     attr_reader :config, :transport
 
     # Accepts the same keyword arguments as Onetime::Configuration, or an
@@ -78,16 +91,44 @@ module Onetime
     #
     # @return [Onetime::Response]
     def request(method, path, query: nil, body: nil, form: nil, raise_on_error: true)
-      transport.request(
+      response = transport.request(
         method, full_path(path),
         query: query, body: body, form: form, raise_on_error: raise_on_error
       )
+      check_ownership(response, path)
+      response
     end
 
     private
 
     def full_path(path)
       "#{config.api_path_prefix}#{path}"
+    end
+
+    # Belt and braces for servers that accept unusable credentials instead of
+    # rejecting them: a 2xx record marked anonymous, from a client that sent
+    # credentials, means those credentials did nothing. Guest routes are
+    # exempt — being ownerless is the point of asking for one.
+    def check_ownership(response, path)
+      return if config.on_unowned == :ignore
+      return if config.anonymous? || path.to_s.include?("/guest/")
+      return unless response.respond_to?(:success?) && response.success?
+      return unless Ownership.unowned?(response)
+
+      if config.on_unowned == :raise
+        raise UnownedResponseError.new(UNOWNED_WARNING, response: response)
+      end
+
+      warn_unowned
+    end
+
+    # Once per client: enough to be noticed, not enough to flood a log.
+    def warn_unowned
+      return if @unowned_warned
+
+      @unowned_warned = true
+      message = "[onetime] #{UNOWNED_WARNING}"
+      config.logger ? config.logger.warn(message) : Kernel.warn(message)
     end
 
     def require_version!(expected, operation)

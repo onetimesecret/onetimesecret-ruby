@@ -1,9 +1,46 @@
 ONETIME, CHANGES
 
-#### 1.0.0.pre.1 (unreleased) #########################
+#### 1.0.0 (unreleased; tag v1.0.0 to publish) #########
+
+  NOTE: 0.5.1 and earlier (below) are the 2012-2013 command-line tool that
+  shipped under this gem name. 1.0.0 is a different program: an API client
+  library. See docs/releasing.md for the RubyGems publishing steps.
 
 * REWRITE: Modern, zero-dependency client built on stdlib Net::HTTP.
   A clean break from 0.5.x (2013); no backward compatibility is maintained.
+
+* ADDED: Onetime::AccountRequiredError for responses that require an
+  authenticated account. The service reports this inside a 400 form-error
+  body (field "requires_account"), which previously surfaced as
+  BadRequestError and sent callers auditing a request body that was fine.
+  It subclasses AuthenticationError and preserves #field. Also matched via
+  error_key, code (e.g. GUEST_CONCEAL_REQUIRES_ACCOUNT) and the
+  RequiresAccount / AccountRequired error types.
+
+* ADDED: organization extid format validation at client construction.
+  Values that don't match the "on..." extid shape are rejected immediately
+  with a message that says where to find the real one; internal record
+  UUIDs and email addresses get a message naming that specific mistake.
+
+* ADDED: unowned-response detection (Onetime::Ownership, on_unowned:).
+  When a client that sent credentials receives a record the server marked
+  anonymous — the signature of credentials that were accepted but not
+  honoured — the client warns once (default), raises
+  Onetime::UnownedResponseError (on_unowned: :raise), or stays quiet
+  (:ignore). Guest-route calls are exempt.
+
+* ADDED: Release workflow (.github/workflows/release.yml) publishing to
+  RubyGems via Trusted Publishing on a v* tag, with a tag/version guard,
+  plus docs/releasing.md.
+
+* CHANGE: README installation instructions no longer say
+  `gem install onetime`, which resolves to the unrelated 2013 CLI gem until
+  1.0.0 is published. They document a tagged git install and the
+  `~> 1.0` constraint to use afterwards.
+
+* CHANGE: README authentication section now leads with the extid-vs-UUID
+  distinction (the mistake integrators actually make) instead of the
+  extid-vs-email one.
 
 * ADDED: Onetime::Client with secrets/receipts resources and meta methods.
 * ADDED: Support for the v1 and v2 APIs (selectable via api_version).

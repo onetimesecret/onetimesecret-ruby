@@ -4,6 +4,7 @@ require_relative "onetime/version"
 require_relative "onetime/errors"
 require_relative "onetime/configuration"
 require_relative "onetime/response"
+require_relative "onetime/ownership"
 require_relative "onetime/transport"
 require_relative "onetime/client"
 
@@ -16,7 +17,7 @@ require_relative "onetime/client"
 #
 #   client = Onetime::Client.new(
 #     base_url:     "https://us.onetimesecret.com",
-#     organization: "on1abc...",
+#     organization: "on1abc23def",
 #     api_token:    ENV["ONETIME_API_TOKEN"],
 #     api_version:  :v2,
 #   )
@@ -26,7 +27,7 @@ module Onetime
   # Convenience constructor mirroring Onetime::Client.new.
   #
   #   Onetime.client(base_url: "https://us.onetimesecret.com",
-  #                  organization: "on1...", api_token: "...")
+  #                  organization: "on1abc23def", api_token: "...")
   def self.client(**options)
     Client.new(**options)
   end

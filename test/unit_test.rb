@@ -69,6 +69,70 @@ class ConfigurationTest < Minitest::Test
   def test_api_path_prefix
     assert_equal "/api/v1", Onetime::Configuration.new(api_version: :v1).api_path_prefix
   end
+
+  # --- organization extid format ------------------------------------------
+
+  def test_accepts_organization_extids
+    %w[on1abc23def ON1ABC23DEF onabcdef].each do |extid|
+      config = Onetime::Configuration.new(base_url: REGION, organization: extid, api_token: "tok")
+      assert_equal extid, config.validate!.organization
+    end
+  end
+
+  def test_rejects_uuid_as_organization
+    %w[
+      018f3c9e-7b1a-4c2d-9f8e-2a1b3c4d5e6f
+      018f3c9e7b1a4c2d9f8e2a1b3c4d5e6f
+    ].each do |uuid|
+      err = assert_raises(Onetime::ConfigurationError) do
+        Onetime::Configuration.new(base_url: REGION, organization: uuid, api_token: "tok").validate!
+      end
+      assert_match(/internal record UUID/, err.message)
+      assert_match(/user menu/, err.message, "the message must say where to find the extid")
+    end
+  end
+
+  def test_rejects_email_as_organization
+    err = assert_raises(Onetime::ConfigurationError) do
+      Onetime::Configuration.new(base_url: REGION, organization: "user@example.com",
+                                 api_token: "tok").validate!
+    end
+    assert_match(/email address/, err.message)
+    assert_match(/user menu/, err.message)
+  end
+
+  def test_rejects_organization_without_on_prefix
+    ["cust_123", "org-abc", "1abc23def", " on1abc"].each do |value|
+      err = assert_raises(Onetime::ConfigurationError) do
+        Onetime::Configuration.new(base_url: REGION, organization: value, api_token: "tok").validate!
+      end
+      assert_match(/not an organization extid/, err.message)
+      assert_match(/user menu/, err.message)
+    end
+  end
+
+  def test_client_rejects_bad_organization_at_construction
+    err = assert_raises(Onetime::ConfigurationError) do
+      Onetime::Client.new(base_url: REGION, organization: "018f3c9e-7b1a-4c2d-9f8e-2a1b3c4d5e6f",
+                          api_token: "tok")
+    end
+    assert_match(/internal record UUID/, err.message)
+  end
+
+  def test_anonymous_client_needs_no_organization
+    assert Onetime::Client.new(base_url: REGION)
+  end
+
+  def test_rejects_unsupported_on_unowned_mode
+    err = assert_raises(Onetime::ConfigurationError) do
+      Onetime::Configuration.new(base_url: REGION, on_unowned: :explode).validate!
+    end
+    assert_match(/on_unowned/, err.message)
+  end
+
+  def test_on_unowned_defaults_to_warn
+    assert_equal :warn, Onetime::Configuration.new.on_unowned
+  end
 end
 
 class ResponseTest < Minitest::Test
@@ -136,6 +200,45 @@ class ErrorsTest < Minitest::Test
   def test_legacy_v1_message_field
     err = from(404, { "message" => "Unknown secret" })
     assert_equal "Unknown secret", err.message
+  end
+
+  # --- requires_account ----------------------------------------------------
+
+  def test_requires_account_field_maps_to_account_required
+    err = from(400, { "error" => "Sign in required", "error_type" => "FormError",
+                      "field" => "requires_account" })
+
+    assert_instance_of Onetime::AccountRequiredError, err
+    refute_kind_of Onetime::BadRequestError, err, "an auth failure is not a bad request body"
+    assert_kind_of Onetime::AuthenticationError, err
+    assert_equal "requires_account", err.field, "the field must be preserved"
+    assert_equal "Sign in required", err.message
+    assert_equal 400, err.http_status
+  end
+
+  def test_requires_account_via_error_key_code_or_type
+    [
+      { "error_key" => "web.COMMON.requires_account" },
+      { "code" => "GUEST_CONCEAL_REQUIRES_ACCOUNT" },
+      { "code" => "ACCOUNT_REQUIRED" },
+      { "error_type" => "RequiresAccount" },
+      { "error_type" => "AccountRequired" },
+    ].each do |body|
+      err = from(400, { "error" => "nope" }.merge(body))
+      assert_instance_of Onetime::AccountRequiredError, err, body.inspect
+    end
+  end
+
+  def test_account_required_has_a_message_when_the_server_sends_none
+    err = from(401, { "field" => "requires_account" })
+    assert_match(/requires an authenticated account/, err.message)
+  end
+
+  def test_unrelated_fields_and_codes_are_untouched
+    assert_instance_of Onetime::BadRequestError,
+                       from(400, { "error_type" => "FormError", "field" => "secret" })
+    assert_instance_of Onetime::ForbiddenError,
+                       from(403, { "code" => "GUEST_CONCEAL_DISABLED" })
   end
 end
 

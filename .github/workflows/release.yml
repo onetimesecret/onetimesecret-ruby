@@ -1,0 +1,53 @@
+name: Release
+
+# Publishes the gem to RubyGems when a v* tag is pushed.
+#
+# Authentication is RubyGems Trusted Publishing (OIDC) — no API key is stored
+# in this repository. The trusted publisher for the `onetime` gem must be
+# configured once at
+# https://rubygems.org/gems/onetime/trusted_publishers
+# (repository onetimesecret/onetime-ruby, workflow release.yml,
+# environment rubygems). See docs/releasing.md.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    environment: rubygems
+    permissions:
+      contents: write # create the GitHub release
+      id-token: write # mint the OIDC token RubyGems verifies
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      # A tag that disagrees with lib/onetime/version.rb would publish a gem
+      # nobody can find by tag. Fail before anything is pushed.
+      - name: Verify the tag matches Onetime::VERSION
+        run: |
+          version="$(ruby -Ilib -ronetime/version -e 'print Onetime::VERSION')"
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$version" != "$tag" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match Onetime::VERSION ($version)" >&2
+            exit 1
+          fi
+
+      - name: Run tests
+        run: bundle exec rake test
+
+      - name: Publish to RubyGems
+        uses: rubygems/release-gem@v1
