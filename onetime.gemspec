@@ -6,10 +6,10 @@ Gem::Specification.new do |spec|
   spec.name        = "onetime"
   spec.version     = Onetime::VERSION
   spec.authors     = ["Delano Mandelbaum"]
-  spec.email       = ["delano@onetimesecret.com"]
+  spec.email       = ["gems@onetimesecret.com"]
 
   spec.summary     = "Official Ruby client for the OnetimeSecret API"
-  spec.description = "A modern, dependency-free Ruby client for the OnetimeSecret " \
+  spec.description = "A dependency-free Ruby client for the OnetimeSecret " \
                      "API, supporting the v1 and v2 API versions."
   spec.homepage    = "https://github.com/onetimesecret/onetime-ruby"
   spec.license     = "MIT"
@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
     "source_code_uri"       => "https://github.com/onetimesecret/onetime-ruby",
     "bug_tracker_uri"       => "https://github.com/onetimesecret/onetime-ruby/issues",
     "documentation_uri"     => "https://docs.onetimesecret.com/",
-    "changelog_uri"         => "https://github.com/onetimesecret/onetime-ruby/blob/master/CHANGES.txt",
+    "changelog_uri"         => "https://github.com/onetimesecret/onetime-ruby/blob/main/CHANGES.txt",
     "rubygems_mfa_required" => "true",
   }
 

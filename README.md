@@ -31,12 +31,6 @@ Or in a Gemfile:
 gem "onetime", "~> 0.6"   # the constraint matters, see below
 ```
 
-> [!IMPORTANT]
-> Require **0.6 or newer**. Releases 0.5.1 and earlier are the 2013
-> command-line tool, whose API surface has nothing in common with this client —
-> an unconstrained `gem "onetime"` in a Gemfile with an old lockfile can still
-> resolve to it. Pin `~> 0.6`, and pin a released version rather than
-> `branch: "master"`.
 
 Maintainers: see [docs/releasing.md](docs/releasing.md).
 
@@ -46,10 +40,10 @@ Maintainers: see [docs/releasing.md](docs/releasing.md).
 require "onetime"
 
 client = Onetime::Client.new(
-  base_url:    "https://us.onetimesecret.com", # your region's API host (required)
-  customer:    "ur1abc23def",                  # customer extid (see below)
+  base_url:    "https://ca.onetimesecret.com", # choose your region's API host (required)
+  customer:    "ur1abc23defghijklmnop",        # customer extid (see below)
   api_token:   ENV["ONETIME_API_TOKEN"],       # API token from your account page
-  api_version: :v2,                            # :v1 or :v2 (default :v2)
+  api_version: :v2,                            # :v1 or :v2 (default)
 )
 
 # Conceal a secret you already have
