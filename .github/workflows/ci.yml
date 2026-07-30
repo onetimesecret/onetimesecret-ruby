@@ -29,7 +29,7 @@ jobs:
             experimental: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -51,7 +51,7 @@ jobs:
       ONETIME_BASE_URL: "https://eu.onetimesecret.com"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
