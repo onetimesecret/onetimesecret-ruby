@@ -10,19 +10,16 @@ Names, kept straight:
 
 The gem's history matters for the install instructions:
 
-- The newest release on RubyGems today is **0.5.1 (2013-02-12)** — the old
-  `drydock`-based command-line tool. Same gem, but an API surface with nothing
-  in common with the current one.
-- Anyone running `gem install onetime` before 0.6.0 is published gets that 2013
-  release. That is why `README.md` currently documents a **tagged git install**
-  and warns about the version boundary.
-- Once 0.6.0 is on RubyGems, `gem "onetime", "~> 0.6"` resolves to this
-  client. The `~> 0.6` constraint is what keeps a resolver from falling back to
-  0.5.1, so the README asks for it explicitly.
+- The release before 0.6.0 is **0.5.1 (2013-02-12)** — the old `drydock`-based
+  command-line tool. Same gem, but an API surface with nothing in common with
+  the current one.
+- `gem "onetime", "~> 0.6"` is therefore the documented form: the constraint is
+  what keeps a resolver from falling back to 0.5.1. The README says so
+  explicitly, and it is worth repeating in support threads.
 
-Until the RubyGems push happens, **do not tell integrators to pin
-`branch: master`** — pin a tag. A moving branch is how a customer ends up
-running an untested commit.
+**Never tell integrators to pin `branch: master`** — point them at a released
+version. A moving branch is how a customer ends up running an untested commit,
+which is exactly the thread that produced this document.
 
 ## One-time setup: Trusted Publishing
 
@@ -63,8 +60,8 @@ publisher is registered against the **gem** (`onetime`) but points at the
    release.
 7. Verify: `gem info onetime --remote` shows 0.6.0, and
    `gem install onetime -v 0.6.0` works in a clean environment.
-8. Update `README.md` to the published-gem instructions (drop the "not yet on
-   RubyGems" callout, keep the `~> 0.6` constraint and the 0.5.x warning).
+8. Check that `README.md`'s install section still matches what is published —
+   the version constraint it asks for, and the 0.5.x caveat.
 
 ## Versioning
 

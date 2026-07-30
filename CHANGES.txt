@@ -35,10 +35,10 @@ ONETIME, CHANGES
   RubyGems via Trusted Publishing on a v* tag, with a tag/version guard,
   plus docs/releasing.md.
 
-* CHANGE: README installation instructions no longer say
-  `gem install onetime`, which resolves to the 2013 command-line tool
-  (0.5.1) until 0.6.0 is published. They document a tagged git install and
-  the `~> 0.6` constraint to use afterwards.
+* CHANGE: README installation instructions now ask for the `~> 0.6`
+  version constraint, and say why: the previous release under this gem
+  name is the 2013 command-line tool (0.5.1), which an unconstrained
+  dependency can still resolve to.
 
 * CHANGE: README authentication section now leads with the extid-vs-UUID
   distinction (the mistake integrators actually make) instead of the

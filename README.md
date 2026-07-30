@@ -21,32 +21,22 @@ repository name is not the package name.
 
 ## Installation
 
-> [!WARNING]
-> **Do not run `gem install onetime` yet.** The newest `onetime` release on
-> RubyGems is still **0.5.1 (2013)** — the old command-line tool, whose API
-> surface has nothing in common with this one. 0.6.0 is not published there
-> yet, so a bare `gem install onetime` gets you that 2013 release and nothing
-> in this README will work.
-
-Until 0.6.0 is published, install from a **tagged** commit — not from a moving
-branch:
-
-```ruby
-# Gemfile
-gem "onetime", github: "onetimesecret/onetime-ruby", tag: "v0.6.0"
+```sh
+gem install onetime
 ```
 
-Tags are listed on the [releases
-page](https://github.com/onetimesecret/onetime-ruby/releases) — if `v0.6.0`
-does not resolve, 0.6.0 has not been tagged yet, so use the newest tag shown
-there. Pinning `branch: "master"` works but ships whatever landed last; pin a
-tag.
-
-Once 0.6.0 is on RubyGems this becomes:
+Or in a Gemfile:
 
 ```ruby
-gem "onetime", "~> 0.6"   # the constraint matters: 0.5.x is the 2013 CLI
+gem "onetime", "~> 0.6"   # the constraint matters, see below
 ```
+
+> [!IMPORTANT]
+> Require **0.6 or newer**. Releases 0.5.1 and earlier are the 2013
+> command-line tool, whose API surface has nothing in common with this client —
+> an unconstrained `gem "onetime"` in a Gemfile with an old lockfile can still
+> resolve to it. Pin `~> 0.6`, and pin a released version rather than
+> `branch: "master"`.
 
 Maintainers: see [docs/releasing.md](docs/releasing.md).
 
