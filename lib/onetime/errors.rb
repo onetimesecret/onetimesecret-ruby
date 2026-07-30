@@ -19,6 +19,19 @@ module Onetime
   # Raised when a request exceeds the configured open/read timeout.
   class TimeoutError < TransportError; end
 
+  # Raised (when on_unowned: :raise) for a successful response describing a
+  # record the server recorded as anonymous even though the client sent
+  # credentials — i.e. the credentials were not honoured, and the secret has
+  # no owner. See Onetime::Ownership.
+  class UnownedResponseError < Error
+    attr_reader :response
+
+    def initialize(message = nil, response: nil)
+      super(message)
+      @response = response
+    end
+  end
+
   # Base class for errors returned by the API (HTTP status >= 400).
   #
   # Carries the structured fields from the ADR-013 wire format
@@ -53,15 +66,29 @@ module Onetime
   class RateLimitError        < APIError; end # 429 / LimitExceeded
   class ServerError           < APIError; end # 5xx / ServerError
 
+  # The operation is only available to an authenticated account. The server
+  # reports this as a field/key rather than a status of its own (historically
+  # a 400 FormError with field "requires_account"), which made it look like a
+  # malformed request body. It is an authentication problem, so it subclasses
+  # AuthenticationError; #field is preserved for callers that need it.
+  class AccountRequiredError < AuthenticationError; end
+
   # Builds the appropriate APIError subclass from an HTTP response.
   module Errors
     module_function
+
+    # Used only when the server sends no message of its own.
+    ACCOUNT_REQUIRED_MESSAGE =
+      "This operation requires an authenticated account: send your " \
+      "customer extid and API token (see Onetime::Client.new)."
 
     # Maps the ADR-013 error_type (the machine-readable class name the
     # server sends) to a client exception class. Falls through to status
     # code mapping when the type is absent or unrecognized.
     ERROR_TYPE_MAP = {
       "FormError"           => BadRequestError,
+      "RequiresAccount"     => AccountRequiredError,
+      "AccountRequired"     => AccountRequiredError,
       "RecordNotFound"      => NotFoundError,
       "NotFound"            => NotFoundError,
       "Forbidden"           => ForbiddenError,
@@ -70,6 +97,17 @@ module Onetime
       "LimitExceeded"       => RateLimitError,
       "ServerError"         => ServerError,
     }.freeze
+
+    # The account requirement can arrive in any of several slots depending on
+    # the endpoint and API version: as the FormError `field`, as the i18n
+    # `error_key`, or as a `code`. Matching all of them keeps the mapping
+    # stable across server versions.
+    ACCOUNT_REQUIRED_KEYS    = %w[error_type field error_key code].freeze
+    # Matches the bare token as well as prefixed codes such as
+    # "GUEST_CONCEAL_REQUIRES_ACCOUNT" (underscores are word characters, so
+    # \b is no help here).
+    ACCOUNT_REQUIRED_PATTERN =
+      /(?:\A|[^a-z0-9])(requires[_-]?account|account[_-]?required)(?:\z|[^a-z0-9])/i
 
     STATUS_MAP = {
       400 => BadRequestError,
@@ -87,8 +125,10 @@ module Onetime
       body   = response.data.is_a?(Hash) ? response.data : {}
       status = response.http_status
 
-      klass   = error_class(body["error_type"], status)
-      message = body["error"] || body["message"] || default_message(status)
+      account = account_required?(body)
+      klass   = account ? AccountRequiredError : error_class(body["error_type"], status)
+      message = body["error"] || body["message"] ||
+                (account ? ACCOUNT_REQUIRED_MESSAGE : default_message(status))
 
       klass.new(
         message,
@@ -102,6 +142,14 @@ module Onetime
         body:        response.data,
         response:    response,
       )
+    end
+
+    # True when the body says the operation needs an authenticated account,
+    # in whichever slot this server version reports it.
+    def account_required?(body)
+      ACCOUNT_REQUIRED_KEYS.any? do |key|
+        ACCOUNT_REQUIRED_PATTERN.match?(body[key].to_s)
+      end
     end
 
     def error_class(error_type, status)

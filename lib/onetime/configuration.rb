@@ -6,20 +6,41 @@ module Onetime
   # Immutable-ish configuration for a Client instance.
   #
   # Authentication uses HTTP Basic, where the username slot carries the
-  # *organization external id* (extid) — the identifier that begins with
-  # "on" and is shown (with a copy button) at the bottom of the user menu
-  # when signed in. The password slot carries your API token.
+  # *customer external id* (extid) — the identifier that begins with "ur" and
+  # is shown (with a copy button) at the bottom of the user menu when signed
+  # in. The password slot carries your API token.
+  #
+  # #validate! checks the extid's format, so a value of the wrong kind fails
+  # at construction rather than as an opaque 401 — or as a secret the server
+  # records as anonymous (see Onetime::Ownership).
   #
   # Values fall back to environment variables:
-  #   ONETIME_BASE_URL    -> base_url
-  #   ONETIME_ORG_EXTID   -> organization
-  #   ONETIME_API_TOKEN   -> api_token
+  #   ONETIME_BASE_URL        -> base_url
+  #   ONETIME_CUSTOMER_EXTID  -> customer
+  #   ONETIME_API_TOKEN       -> api_token
   class Configuration
     DEFAULT_API_VERSION  = :v2
     SUPPORTED_VERSIONS   = %i[v1 v2].freeze
     DEFAULT_TIMEOUT      = 30  # read timeout, seconds
     DEFAULT_OPEN_TIMEOUT = 10  # connect timeout, seconds
     DEFAULT_MAX_RETRIES  = 2   # retries for idempotent requests
+    DEFAULT_ON_UNOWNED   = :warn # see #on_unowned
+
+    # What to do when a request made *with* credentials comes back describing
+    # a record the server recorded as anonymous — the signature of credentials
+    # that were sent but not honoured.
+    ON_UNOWNED_MODES = %i[warn raise ignore].freeze
+
+    # A customer extid is a short, opaque, case-insensitive identifier that
+    # always begins with "ur" — e.g. "ur1abc23def".
+    CUSTOMER_EXTID_PATTERN = /\Aur[a-z0-9]+\z/i
+
+    # Included in the rejection message: an invalid-format error is only
+    # actionable if it says where the valid value lives.
+    CUSTOMER_EXTID_HINT =
+      'Your customer extid is the "ur…" identifier at the bottom of the ' \
+      "user menu when you are signed in (there is a copy button next to it). " \
+      "Pass it as customer: or set ONETIME_CUSTOMER_EXTID."
 
     # The apex domain and its www host serve the company website, not the
     # API. Regional deployments each have their own host.
@@ -33,16 +54,18 @@ module Onetime
       ca.onetimesecret.com nz.onetimesecret.com
     ].freeze
 
-    attr_accessor :base_url, :api_version, :organization, :api_token,
+    attr_accessor :base_url, :api_version, :customer, :api_token,
                   :timeout, :open_timeout, :max_retries,
-                  :user_agent, :logger, :transport, :default_headers
+                  :user_agent, :logger, :transport, :default_headers,
+                  :on_unowned
 
-    def initialize(base_url: nil, api_version: nil, organization: nil,
+    def initialize(base_url: nil, api_version: nil, customer: nil,
                    api_token: nil, timeout: nil, open_timeout: nil, max_retries: nil,
-                   user_agent: nil, logger: nil, transport: nil, default_headers: nil)
+                   user_agent: nil, logger: nil, transport: nil, default_headers: nil,
+                   on_unowned: nil)
       @base_url        = base_url || ENV["ONETIME_BASE_URL"]
       @api_version     = normalize_version(api_version || DEFAULT_API_VERSION)
-      @organization    = organization || ENV["ONETIME_ORG_EXTID"]
+      @customer    = customer || ENV["ONETIME_CUSTOMER_EXTID"]
       @api_token       = api_token || ENV["ONETIME_API_TOKEN"]
       @timeout         = timeout || DEFAULT_TIMEOUT
       @open_timeout    = open_timeout || DEFAULT_OPEN_TIMEOUT
@@ -51,12 +74,15 @@ module Onetime
       @logger          = logger
       @transport       = transport
       @default_headers = default_headers || {}
+      # .to_s first: an Integer (or anything else) has no #to_sym, and a
+      # NoMethodError here would pre-empt validate_on_unowned!'s useful message.
+      @on_unowned      = (on_unowned || DEFAULT_ON_UNOWNED).to_s.to_sym
     end
 
     # True when no credentials are configured. Anonymous clients can still
     # use public and /guest/* endpoints.
     def anonymous?
-      organization.to_s.empty? && api_token.to_s.empty?
+      customer.to_s.empty? && api_token.to_s.empty?
     end
 
     # The mount prefix for the configured API version, e.g. "/api/v2".
@@ -68,6 +94,7 @@ module Onetime
       validate_api_version!
       validate_base_url!
       validate_credentials!
+      validate_on_unowned!
       self
     end
 
@@ -109,11 +136,33 @@ module Onetime
     end
 
     def validate_credentials!
-      # Partial credentials are almost always a mistake; fail loudly.
-      return unless organization.to_s.empty? ^ api_token.to_s.empty?
+      validate_customer_format! unless customer.to_s.empty?
 
-      missing = organization.to_s.empty? ? "organization" : "api_token"
+      # Partial credentials are almost always a mistake; fail loudly.
+      return unless customer.to_s.empty? ^ api_token.to_s.empty?
+
+      missing = customer.to_s.empty? ? "customer" : "api_token"
       raise ConfigurationError, "Incomplete credentials: #{missing} is missing"
+    end
+
+    # Catch an identifier of the wrong kind at construction time rather than
+    # as a 401 — or as a silently unowned secret — several calls later.
+    def validate_customer_format!
+      value = customer.to_s
+      return if CUSTOMER_EXTID_PATTERN.match?(value)
+
+      raise ConfigurationError,
+            "customer #{value.inspect} is not a customer extid: extids begin " \
+            'with "ur" (e.g. "ur1abc23def"). ' \
+            "#{CUSTOMER_EXTID_HINT}"
+    end
+
+    def validate_on_unowned!
+      return if ON_UNOWNED_MODES.include?(on_unowned)
+
+      raise ConfigurationError,
+            "Unsupported on_unowned #{on_unowned.inspect}; " \
+            "supported: #{ON_UNOWNED_MODES.join(', ')}"
     end
 
     def normalize_version(version)

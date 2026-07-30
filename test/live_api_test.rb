@@ -20,7 +20,7 @@ require_relative "test_helper"
 # assertions check structure and round-trip behaviour rather than exact
 # server-supplied values (versions, identifiers, ...).
 class LiveApiTest < Minitest::Test
-  DEFAULT_BASE_URL = "https://eu.onetimesecret.com"
+  DEFAULT_BASE_URL = "https://ca.onetimesecret.com"
   TTL = 60
 
   def setup

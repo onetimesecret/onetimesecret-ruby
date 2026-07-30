@@ -1,9 +1,46 @@
 ONETIME, CHANGES
 
-#### 1.0.0.pre.1 (unreleased) #########################
+#### 0.6.0 (unreleased; tag v0.6.0 to publish) #########
+
+  The first release of the `onetime` gem since 0.5.1 (2013): the same gem,
+  cleaned up and brought current. The API surface changes completely, and
+  the command-line tool moves out to `onetime-cli`, so treat this as a
+  rewrite rather than a drop-in upgrade. See docs/releasing.md for the
+  RubyGems publishing steps.
 
 * REWRITE: Modern, zero-dependency client built on stdlib Net::HTTP.
   A clean break from 0.5.x (2013); no backward compatibility is maintained.
+
+* ADDED: Onetime::AccountRequiredError for responses that require an
+  authenticated account. The service reports this inside a 400 form-error
+  body (field "requires_account"), which previously surfaced as
+  BadRequestError and sent callers auditing a request body that was fine.
+  It subclasses AuthenticationError and preserves #field. Also matched via
+  error_key, code (e.g. GUEST_CONCEAL_REQUIRES_ACCOUNT) and the
+  RequiresAccount / AccountRequired error types.
+
+* ADDED: customer extid format validation at client construction. Values
+  that don't match the "ur..." extid shape are rejected immediately, with a
+  message that says where to find the right one.
+
+* ADDED: unowned-response detection (Onetime::Ownership, on_unowned:).
+  When a client that sent credentials receives a record the server marked
+  anonymous — the signature of credentials that were accepted but not
+  honoured — the client warns once (default), raises
+  Onetime::UnownedResponseError (on_unowned: :raise), or stays quiet
+  (:ignore). Guest-route calls are exempt.
+
+* ADDED: Release workflow (.github/workflows/release.yml) publishing to
+  RubyGems via Trusted Publishing on a v* tag, with a tag/version guard,
+  plus docs/releasing.md.
+
+* CHANGE: README installation instructions now ask for the `~> 0.6`
+  version constraint, and say why: the previous release under this gem
+  name is the 2013 command-line tool (0.5.1), which an unconstrained
+  dependency can still resolve to.
+
+* CHANGE: README authentication section now describes the customer extid
+  format up front, rather than contrasting it with the pre-1.0 email custid.
 
 * ADDED: Onetime::Client with secrets/receipts resources and meta methods.
 * ADDED: Support for the v1 and v2 APIs (selectable via api_version).
@@ -14,9 +51,9 @@ ONETIME, CHANGES
 * ADDED: Retries with exponential backoff for idempotent requests.
 * ADDED: Minitest test suite (unit + real Net::HTTP integration).
 
-* CHANGE: Authentication uses the organization extid (the "on..." identifier
-  at the bottom of the user menu) as the HTTP Basic username, with the API
-  token as the password. Set it via `organization:` / ONETIME_ORG_EXTID.
+* CHANGE: Authentication uses the customer extid (the "ur..." identifier at
+  the bottom of the user menu) as the HTTP Basic username, with the API
+  token as the password. Set it via `customer:` / ONETIME_CUSTOMER_EXTID.
 * CHANGE: base_url is now required (no default). Region-isolated deployments
   mean there is no safe default; the apex onetimesecret.com (company website)
   is rejected with guidance toward regional/self-hosted/custom hosts.

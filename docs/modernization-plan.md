@@ -1,6 +1,11 @@
 # onetime-ruby Modernization Plan
 
 > Status: Draft for review · Date: 2026-06-19 · Target: `1.0.0`
+>
+> Update: the first release under this plan ships as **`0.6.0`**, continuing the
+> gem's existing 0.x line rather than jumping to 1.0.0. The version stays below
+> 1.0 until the API surface has settled; references to "1.0" below describe this
+> body of work, not the version number.
 
 This document is the implementation plan for bringing the official Ruby client
 from its current 2013-era state (`v0.5.1`) up to a modern, Ruby 3 client library
@@ -43,8 +48,8 @@ The library is a single ~140-line file plus a CLI, last released **2013-02-12**.
   defaulting to `1`. Endpoints are the legacy `/share`, `/generate`,
   `/secret/:key`, `/metadata/:key`, `/status`.
 - **Stale auth model**: HTTP Basic with `custid` (email) + `key`. The server
-  now authenticates the **organization extid** (the `on...` identifier shown at
-  the bottom of the user menu) in the username slot + an **API token** as the
+  now authenticates the **customer extid** (the `ur...` identifier shown at the
+  bottom of the user menu) in the username slot + an **API token** as the
   password.
 - **No engineering hygiene**: no tests, no CI, no RuboCop, no type signatures,
   no SemVer discipline. Gem signing points at a non-existent
@@ -118,9 +123,9 @@ truth for request/response shapes and should drive contract tests.
 require "onetime"
 
 client = Onetime::Client.new(
-  base_url:     "https://us.onetimesecret.com", # region/self-hosted/custom (required)
+  base_url:     "https://ca.onetimesecret.com", # region/self-hosted/custom (required)
   api_version:  :v3,                            # :v3 (default), :v2, :v1 (shim)
-  organization: "on1abc...",                    # organization extid (HTTP Basic username)
+  customer:     "ur1abc23def",                  # customer extid (HTTP Basic username)
   api_token:    ENV["ONETIME_API_TOKEN"],       # HTTP Basic token (v2) ...
   # session:    "...",                          # ... or session for v3 authed routes
   timeout:      10,
@@ -129,7 +134,7 @@ client = Onetime::Client.new(
 
 # Conceal a secret you already have
 receipt = client.secrets.conceal(secret: "hunter2", ttl: 3600, passphrase: "pw")
-receipt.secret_url      # => "https://us.onetimesecret.com/secret/abc..."
+receipt.secret_url      # => "https://ca.onetimesecret.com/secret/abc..."
 receipt.receipt_url
 receipt.ttl             # => 3600 (Integer, regardless of v2/v3)
 
@@ -226,7 +231,7 @@ compatibility is maintained:
 - **No `OT::API` shim**: the legacy `Onetime::API`/`OT::API.new`/`get`/`post`
   surface and the `OT` top-level alias are removed. `Onetime::Client` is the
   only interface.
-- **No legacy env vars**: only `ONETIME_BASE_URL`, `ONETIME_ORG_EXTID`, and
+- **No legacy env vars**: only `ONETIME_BASE_URL`, `ONETIME_CUSTOMER_EXTID`, and
   `ONETIME_API_TOKEN` are read (the old `ONETIME_HOST`/`ONETIME_CUSTID`/
   `ONETIME_APIKEY` are gone).
 - **CLI users**: `onetime` moves to a separate `onetime-cli` gem; the dead
@@ -239,8 +244,9 @@ compatibility is maintained:
    presenting a session from a server-to-server client (vs. relying on v2
    API-token basic auth or `/guest/*`). *This determines whether headless v3
    automation is fully supported or steers integrators to v2.*
-2. **Gem name** — keep `onetime`, or rename to `onetimesecret` for
-   discoverability? Affects the migration story.
+2. ~~**Gem name**~~ — **resolved: the gem stays `onetime`.** `onetime-ruby` is
+   the repository name — this being the Ruby SDK of a per-language family — and
+   is never a package name.
 3. **Idempotency/retries** — confirm which endpoints are safe to auto-retry
    (GETs and status; conceal/generate are not idempotent).
 4. **OpenAPI spec distribution** — is the generated spec published at a stable

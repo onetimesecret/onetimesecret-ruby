@@ -125,9 +125,9 @@ module Onetime
       default_headers.merge(headers).each { |k, v| request[k] = v }
 
       unless @config.anonymous?
-        # HTTP Basic: the organization extid occupies the username slot,
+        # HTTP Basic: the customer extid occupies the username slot,
         # the API token occupies the password slot.
-        request.basic_auth(@config.organization, @config.api_token)
+        request.basic_auth(@config.customer, @config.api_token)
       end
 
       if form
@@ -188,6 +188,8 @@ module Onetime
       }.merge(@config.default_headers)
     end
 
+    # Identifies the SDK, not the gem: "onetime-ruby" tells the service which
+    # of the per-language clients is calling. The gem itself is `onetime`.
     def default_user_agent
       "onetime-ruby/#{Onetime::VERSION} (Ruby/#{RUBY_VERSION})"
     end

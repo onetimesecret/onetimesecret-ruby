@@ -37,9 +37,9 @@ end
 module ClientTestHelpers
   def build_client(version:, transport: FakeTransport.new, **opts)
     Onetime::Client.new(
-      base_url: "https://us.onetimesecret.com",
+      base_url: "https://ca.onetimesecret.com",
       api_version: version,
-      organization: "on1example",
+      customer: "ur1example",
       api_token: "token123",
       transport: transport,
       **opts
