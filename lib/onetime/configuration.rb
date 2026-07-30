@@ -167,7 +167,7 @@ module Onetime
           "tooling but are not credentials."
       elsif value.include?("@")
         "organization #{value.inspect} looks like an email address. Email " \
-          "addresses (the pre-1.0 custid) are no longer used to authenticate."
+          "addresses (the 0.5.x custid) are no longer used to authenticate."
       else
         "organization #{value.inspect} is not an organization extid: extids " \
           'begin with "on" (e.g. "on1abc23def").'

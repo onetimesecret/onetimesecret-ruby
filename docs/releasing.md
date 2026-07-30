@@ -1,17 +1,24 @@
 # Releasing
 
-This client is published to RubyGems as **`onetime`**, the same gem name used
-by the 2012–2013 command-line tool. That history matters:
+Names, kept straight:
+
+- **`onetime`** is the gem, on RubyGems. That name is correct and settled — it
+  is not changing.
+- **`onetime-ruby`** is this repository: the Ruby SDK of the OnetimeSecret SDK
+  family, one per language. The repository name is not the package name, so
+  never write `gem "onetime-ruby"`.
+
+The gem's history matters for the install instructions:
 
 - The newest release on RubyGems today is **0.5.1 (2013-02-12)** — the old
-  `drydock`-based CLI, a completely different program with a different API
-  surface. It is not this library.
-- Anyone running `gem install onetime` before 1.0.0 is published gets that
-  2013 gem. That is why `README.md` currently documents a **tagged git
-  install** and warns about the version boundary.
-- Once 1.0.0 is on RubyGems, `gem "onetime", "~> 1.0"` resolves to this
-  client. The `~> 1.0` constraint is what keeps a resolver from falling back
-  to 0.5.1, so the README asks for it explicitly.
+  `drydock`-based command-line tool. Same gem, but an API surface with nothing
+  in common with the current one.
+- Anyone running `gem install onetime` before 0.6.0 is published gets that 2013
+  release. That is why `README.md` currently documents a **tagged git install**
+  and warns about the version boundary.
+- Once 0.6.0 is on RubyGems, `gem "onetime", "~> 0.6"` resolves to this
+  client. The `~> 0.6` constraint is what keeps a resolver from falling back to
+  0.5.1, so the README asks for it explicitly.
 
 Until the RubyGems push happens, **do not tell integrators to pin
 `branch: master`** — pin a tag. A moving branch is how a customer ends up
@@ -31,9 +38,9 @@ owner of the gem:
    (Settings → Environments) and add whatever reviewers/branch restrictions
    you want gating a publish.
 
-If the gem name is ever moved to `onetimesecret` (open question in
-`docs/modernization-plan.md` §9), the trusted publisher and the README's
-install instructions both have to be updated.
+Note the asymmetry in the steps above, since it is easy to fumble: the trusted
+publisher is registered against the **gem** (`onetime`) but points at the
+**repository** (`onetime-ruby`).
 
 ## Cutting a release
 
@@ -42,24 +49,25 @@ install instructions both have to be updated.
    gemspec reads it, and the release workflow checks the tag against it).
 3. Update `CHANGES.txt`: replace the `(unreleased …)` marker on the top
    section with the release date.
-4. Commit: `git commit -am "Release 1.0.0"`.
+4. Commit: `git commit -am "Release 0.6.0"`.
 5. Tag and push:
 
    ```sh
-   git tag -a v1.0.0 -m "onetime 1.0.0"
+   git tag -a v0.6.0 -m "onetime 0.6.0"
    git push origin master
-   git push origin v1.0.0
+   git push origin v0.6.0
    ```
 
 6. The tag push runs `Release`, which verifies the tag/version match, runs the
    tests, builds the gem, pushes it to RubyGems, and creates the GitHub
    release.
-7. Verify: `gem info onetime --remote` shows 1.0.0, and
-   `gem install onetime -v 1.0.0` works in a clean environment.
+7. Verify: `gem info onetime --remote` shows 0.6.0, and
+   `gem install onetime -v 0.6.0` works in a clean environment.
 8. Update `README.md` to the published-gem instructions (drop the "not yet on
-   RubyGems" callout, keep the `~> 1.0` constraint and the 0.5.x warning).
+   RubyGems" callout, keep the `~> 0.6` constraint and the 0.5.x warning).
 
 ## Versioning
 
-SemVer. The 1.0 line is a clean break from 0.5.x with no compatibility shim,
-so 0.5.x users are treated as new adopters, not upgraders.
+SemVer, continuing the gem's existing 0.x line. 0.6.0 is a clean break from
+0.5.x with no compatibility shim, so 0.5.x users are new adopters rather than
+upgraders — but the version stays below 1.0 until the API surface has settled.

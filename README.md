@@ -3,6 +3,10 @@
 The official Ruby client for the [OnetimeSecret](https://onetimesecret.com)
 API. Share sensitive information through a link that can only be viewed once.
 
+The gem is **`onetime`**. This repository, **`onetime-ruby`**, is the Ruby SDK
+in the OnetimeSecret SDK family — each language has its own repository, and the
+repository name is not the package name.
+
 - **Zero runtime dependencies** — built entirely on the Ruby standard library
   (`net/http`, `uri`, `json`), so it drops into any environment without pulling
   transitive gems.
@@ -18,30 +22,30 @@ API. Share sensitive information through a link that can only be viewed once.
 ## Installation
 
 > [!WARNING]
-> **Do not run `gem install onetime` yet.** The `onetime` gem on RubyGems is
-> still at version **0.5.1 (2013)** — the old command-line tool, an unrelated
-> program that predates this client. This 1.0 library is not published there
-> yet, so a bare `gem install onetime` gets you the 2013 gem and nothing in
-> this README will work.
+> **Do not run `gem install onetime` yet.** The newest `onetime` release on
+> RubyGems is still **0.5.1 (2013)** — the old command-line tool, whose API
+> surface has nothing in common with this one. 0.6.0 is not published there
+> yet, so a bare `gem install onetime` gets you that 2013 release and nothing
+> in this README will work.
 
-Until 1.0.0 is published, install from a **tagged** commit — not from a moving
+Until 0.6.0 is published, install from a **tagged** commit — not from a moving
 branch:
 
 ```ruby
 # Gemfile
-gem "onetime", github: "onetimesecret/onetime-ruby", tag: "v1.0.0"
+gem "onetime", github: "onetimesecret/onetime-ruby", tag: "v0.6.0"
 ```
 
 Tags are listed on the [releases
-page](https://github.com/onetimesecret/onetime-ruby/releases) — if `v1.0.0`
-does not resolve, 1.0.0 has not been tagged yet, so use the newest tag shown
+page](https://github.com/onetimesecret/onetime-ruby/releases) — if `v0.6.0`
+does not resolve, 0.6.0 has not been tagged yet, so use the newest tag shown
 there. Pinning `branch: "master"` works but ships whatever landed last; pin a
 tag.
 
-Once 1.0.0 is on RubyGems this becomes:
+Once 0.6.0 is on RubyGems this becomes:
 
 ```ruby
-gem "onetime", "~> 1.0"   # the constraint matters: anything < 1.0 is the 2013 CLI
+gem "onetime", "~> 0.6"   # the constraint matters: 0.5.x is the 2013 CLI
 ```
 
 Maintainers: see [docs/releasing.md](docs/releasing.md).
@@ -92,7 +96,7 @@ username and your **API token** is the password.
 |---|---|---|
 | `on1abc23def` | **Yes** | Bottom of the user menu when signed in — click the copy button next to the `on…` identifier |
 | `018f3c9e-7b1a-4c2d-9f8e-2a1b3c4d5e6f` | No — internal record UUID | API response bodies, admin tooling, database ids |
-| `you@example.com` | No — that was the pre-1.0 `custid` | Your login email; not used for API auth since 1.0 |
+| `you@example.com` | No — that was the 0.5.x `custid` | Your login email; not used for API auth since 0.6 |
 
 The client checks the format at construction, so the wrong identifier fails
 immediately instead of at the first request:
