@@ -19,19 +19,6 @@ module Onetime
   # Raised when a request exceeds the configured open/read timeout.
   class TimeoutError < TransportError; end
 
-  # Raised (when on_unowned: :raise) for a successful response describing a
-  # record the server recorded as anonymous even though the client sent
-  # credentials — i.e. the credentials were not honoured, and the secret has
-  # no owner. See Onetime::Ownership.
-  class UnownedResponseError < Error
-    attr_reader :response
-
-    def initialize(message = nil, response: nil)
-      super(message)
-      @response = response
-    end
-  end
-
   # Base class for errors returned by the API (HTTP status >= 400).
   #
   # Carries the structured fields from the ADR-013 wire format

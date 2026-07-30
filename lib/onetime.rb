@@ -4,7 +4,6 @@ require_relative "onetime/version"
 require_relative "onetime/errors"
 require_relative "onetime/configuration"
 require_relative "onetime/response"
-require_relative "onetime/ownership"
 require_relative "onetime/transport"
 require_relative "onetime/client"
 

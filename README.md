@@ -82,21 +82,11 @@ Onetime::Client.new(base_url: "https://ca.onetimesecret.com",
 #    extids begin with "ur" (e.g. "ur1abc23def"). ...
 ```
 
-#### When credentials are silently ignored
-
-Some server versions accept a request carrying unusable credentials and create
-the secret **anonymously** instead of returning 401. The call succeeds, you get
-a working link, and it never appears in your account.
-
-The client watches for that: when a client with credentials receives a record
-the server marked as anonymous, it warns once (to `logger` if you passed one,
-otherwise `$stderr`). Guest-route calls (`guest: true`) are exempt, since being
-ownerless is the point of those. Control it with `on_unowned:`:
-
-```ruby
-Onetime::Client.new(..., on_unowned: :raise)   # :warn (default), :raise, :ignore
-# raises Onetime::UnownedResponseError; #response holds the successful response
-```
+> Self-hosted servers older than
+> [onetimesecret#3945](https://github.com/onetimesecret/onetimesecret/pull/3945)
+> silently accept invalid credentials and create the secret **anonymously**
+> instead of returning 401 — the call succeeds, but the secret never appears in
+> your account. Current servers return 401.
 
 ### Base URL (required)
 
@@ -128,7 +118,6 @@ Regional API hosts:
 | `timeout`      | `30`                                           | Read timeout (seconds)                  |
 | `open_timeout` | `10`                                           | Connect timeout (seconds)               |
 | `max_retries`  | `2`                                            | Retries for idempotent (GET) requests   |
-| `on_unowned`   | `:warn`                                        | `:warn`, `:raise` or `:ignore` — see [above](#when-credentials-are-silently-ignored) |
 
 Environment fallbacks: `base_url` ← `ONETIME_BASE_URL`; `customer` ←
 `ONETIME_CUSTOMER_EXTID`; `api_token` ← `ONETIME_API_TOKEN`.
@@ -227,7 +216,6 @@ end
 | `Onetime::ServerError` | 5xx |
 | `Onetime::TransportError` / `TimeoutError` | network failures |
 | `Onetime::ConfigurationError` | bad `base_url`, malformed `customer` extid, incomplete credentials (raised at construction) |
-| `Onetime::UnownedResponseError` | a *successful* response the server recorded as anonymous, with `on_unowned: :raise` |
 
 All inherit from `Onetime::Error`.
 
