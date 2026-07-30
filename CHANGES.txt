@@ -19,10 +19,9 @@ ONETIME, CHANGES
   error_key, code (e.g. GUEST_CONCEAL_REQUIRES_ACCOUNT) and the
   RequiresAccount / AccountRequired error types.
 
-* ADDED: organization extid format validation at client construction.
-  Values that don't match the "on..." extid shape are rejected immediately
-  with a message that says where to find the real one; internal record
-  UUIDs and email addresses get a message naming that specific mistake.
+* ADDED: customer extid format validation at client construction. Values
+  that don't match the "ur..." extid shape are rejected immediately, with a
+  message that says where to find the right one.
 
 * ADDED: unowned-response detection (Onetime::Ownership, on_unowned:).
   When a client that sent credentials receives a record the server marked
@@ -40,9 +39,8 @@ ONETIME, CHANGES
   name is the 2013 command-line tool (0.5.1), which an unconstrained
   dependency can still resolve to.
 
-* CHANGE: README authentication section now leads with the extid-vs-UUID
-  distinction (the mistake integrators actually make) instead of the
-  extid-vs-email one.
+* CHANGE: README authentication section now describes the customer extid
+  format up front, rather than contrasting it with the pre-1.0 email custid.
 
 * ADDED: Onetime::Client with secrets/receipts resources and meta methods.
 * ADDED: Support for the v1 and v2 APIs (selectable via api_version).
@@ -53,9 +51,9 @@ ONETIME, CHANGES
 * ADDED: Retries with exponential backoff for idempotent requests.
 * ADDED: Minitest test suite (unit + real Net::HTTP integration).
 
-* CHANGE: Authentication uses the organization extid (the "on..." identifier
-  at the bottom of the user menu) as the HTTP Basic username, with the API
-  token as the password. Set it via `organization:` / ONETIME_ORG_EXTID.
+* CHANGE: Authentication uses the customer extid (the "ur..." identifier at
+  the bottom of the user menu) as the HTTP Basic username, with the API
+  token as the password. Set it via `customer:` / ONETIME_CUSTOMER_EXTID.
 * CHANGE: base_url is now required (no default). Region-isolated deployments
   mean there is no safe default; the apex onetimesecret.com (company website)
   is rejected with guidance toward regional/self-hosted/custom hosts.

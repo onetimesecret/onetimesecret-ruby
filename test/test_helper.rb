@@ -39,7 +39,7 @@ module ClientTestHelpers
     Onetime::Client.new(
       base_url: "https://us.onetimesecret.com",
       api_version: version,
-      organization: "on1example",
+      customer: "ur1example",
       api_token: "token123",
       transport: transport,
       **opts

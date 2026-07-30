@@ -1,6 +1,6 @@
 # Releasing
 
-Names, kept straight:
+## Gem name and repository name
 
 - **`onetime`** is the gem, on RubyGems. That name is correct and settled — it
   is not changing.
@@ -8,18 +8,15 @@ Names, kept straight:
   family, one per language. The repository name is not the package name, so
   never write `gem "onetime-ruby"`.
 
-The gem's history matters for the install instructions:
+## Version history and install instructions
 
-- The release before 0.6.0 is **0.5.1 (2013-02-12)** — the old `drydock`-based
-  command-line tool. Same gem, but an API surface with nothing in common with
-  the current one.
-- `gem "onetime", "~> 0.6"` is therefore the documented form: the constraint is
-  what keeps a resolver from falling back to 0.5.1. The README says so
-  explicitly, and it is worth repeating in support threads.
+The release before 0.6.0 is **0.5.1 (2013-02-12)**, the old `drydock`-based
+command-line tool: the same gem, but an API surface with nothing in common with
+the current one. `gem "onetime", "~> 0.6"` is therefore the documented form,
+since the constraint is what keeps a resolver from falling back to 0.5.1.
 
-**Never tell integrators to pin `branch: master`** — point them at a released
-version. A moving branch is how a customer ends up running an untested commit,
-which is exactly the thread that produced this document.
+Point integrators at a released version rather than `branch: master`. A moving
+branch means running whatever commit landed last.
 
 ## One-time setup: Trusted Publishing
 
@@ -35,9 +32,9 @@ owner of the gem:
    (Settings → Environments) and add whatever reviewers/branch restrictions
    you want gating a publish.
 
-Note the asymmetry in the steps above, since it is easy to fumble: the trusted
-publisher is registered against the **gem** (`onetime`) but points at the
-**repository** (`onetime-ruby`).
+Note the asymmetry in the steps above: the trusted publisher is registered
+against the **gem** (`onetime`) but points at the **repository**
+(`onetime-ruby`).
 
 ## Cutting a release
 

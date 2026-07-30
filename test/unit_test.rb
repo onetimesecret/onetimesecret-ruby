@@ -12,9 +12,9 @@ class ConfigurationTest < Minitest::Test
     assert config.anonymous?
   end
 
-  def test_organization_is_the_credential
-    config = Onetime::Configuration.new(organization: "on1abc", api_token: "tok")
-    assert_equal "on1abc", config.organization
+  def test_customer_extid_is_the_credential
+    config = Onetime::Configuration.new(customer: "ur1abc", api_token: "tok")
+    assert_equal "ur1abc", config.customer
     refute config.anonymous?
   end
 
@@ -59,7 +59,7 @@ class ConfigurationTest < Minitest::Test
 
   def test_rejects_partial_credentials
     assert_raises(Onetime::ConfigurationError) do
-      Onetime::Configuration.new(base_url: REGION, organization: "on1abc").validate!
+      Onetime::Configuration.new(base_url: REGION, customer: "ur1abc").validate!
     end
     assert_raises(Onetime::ConfigurationError) do
       Onetime::Configuration.new(base_url: REGION, api_token: "tok").validate!
@@ -70,56 +70,42 @@ class ConfigurationTest < Minitest::Test
     assert_equal "/api/v1", Onetime::Configuration.new(api_version: :v1).api_path_prefix
   end
 
-  # --- organization extid format ------------------------------------------
+  # --- customer extid format ----------------------------------------------
 
-  def test_accepts_organization_extids
-    %w[on1abc23def ON1ABC23DEF onabcdef].each do |extid|
-      config = Onetime::Configuration.new(base_url: REGION, organization: extid, api_token: "tok")
-      assert_equal extid, config.validate!.organization
+  def test_accepts_customer_extids
+    %w[ur1abc23def UR1ABC23DEF urabcdef].each do |extid|
+      config = Onetime::Configuration.new(base_url: REGION, customer: extid, api_token: "tok")
+      assert_equal extid, config.validate!.customer
     end
   end
 
-  def test_rejects_uuid_as_organization
-    %w[
-      018f3c9e-7b1a-4c2d-9f8e-2a1b3c4d5e6f
-      018f3c9e7b1a4c2d9f8e2a1b3c4d5e6f
-    ].each do |uuid|
+  def test_rejects_values_that_are_not_customer_extids
+    [
+      "018f3c9e-7b1a-4c2d-9f8e-2a1b3c4d5e6f", # record UUID
+      "018f3c9e7b1a4c2d9f8e2a1b3c4d5e6f",
+      "on1abc23def",                          # an extid, but not the customer's
+      "user@example.com",                     # the 0.5.x custid
+      "cust_123",
+      "1abc23def",
+      " ur1abc",
+    ].each do |value|
       err = assert_raises(Onetime::ConfigurationError) do
-        Onetime::Configuration.new(base_url: REGION, organization: uuid, api_token: "tok").validate!
+        Onetime::Configuration.new(base_url: REGION, customer: value, api_token: "tok").validate!
       end
-      assert_match(/internal record UUID/, err.message)
+      assert_match(/not a customer extid/, err.message, value)
       assert_match(/user menu/, err.message, "the message must say where to find the extid")
     end
   end
 
-  def test_rejects_email_as_organization
+  def test_client_rejects_a_bad_customer_extid_at_construction
     err = assert_raises(Onetime::ConfigurationError) do
-      Onetime::Configuration.new(base_url: REGION, organization: "user@example.com",
-                                 api_token: "tok").validate!
-    end
-    assert_match(/email address/, err.message)
-    assert_match(/user menu/, err.message)
-  end
-
-  def test_rejects_organization_without_on_prefix
-    ["cust_123", "org-abc", "1abc23def", " on1abc"].each do |value|
-      err = assert_raises(Onetime::ConfigurationError) do
-        Onetime::Configuration.new(base_url: REGION, organization: value, api_token: "tok").validate!
-      end
-      assert_match(/not an organization extid/, err.message)
-      assert_match(/user menu/, err.message)
-    end
-  end
-
-  def test_client_rejects_bad_organization_at_construction
-    err = assert_raises(Onetime::ConfigurationError) do
-      Onetime::Client.new(base_url: REGION, organization: "018f3c9e-7b1a-4c2d-9f8e-2a1b3c4d5e6f",
+      Onetime::Client.new(base_url: REGION, customer: "018f3c9e-7b1a-4c2d-9f8e-2a1b3c4d5e6f",
                           api_token: "tok")
     end
-    assert_match(/internal record UUID/, err.message)
+    assert_match(/not a customer extid/, err.message)
   end
 
-  def test_anonymous_client_needs_no_organization
+  def test_anonymous_client_needs_no_credentials
     assert Onetime::Client.new(base_url: REGION)
   end
 

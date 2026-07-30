@@ -46,10 +46,10 @@ Maintainers: see [docs/releasing.md](docs/releasing.md).
 require "onetime"
 
 client = Onetime::Client.new(
-  base_url:     "https://us.onetimesecret.com", # your region's API host (required)
-  organization: "on1abc23def",                  # organization extid, not a UUID (see below)
-  api_token:    ENV["ONETIME_API_TOKEN"],       # API token from your account page
-  api_version:  :v2,                            # :v1 or :v2 (default :v2)
+  base_url:    "https://us.onetimesecret.com", # your region's API host (required)
+  customer:    "ur1abc23def",                  # customer extid (see below)
+  api_token:   ENV["ONETIME_API_TOKEN"],       # API token from your account page
+  api_version: :v2,                            # :v1 or :v2 (default :v2)
 )
 
 # Conceal a secret you already have
@@ -70,46 +70,29 @@ client.status
 
 ### Authentication
 
-Authentication uses HTTP Basic, where the **organization extid** is the
-username and your **API token** is the password.
+Authentication uses HTTP Basic, where the **customer extid** is the username
+and your **API token** is the password.
 
-> [!IMPORTANT]
-> The `organization` value is the **organization extid** — a short identifier
-> that begins with `on`, for example `on1abc23def`. It is **not a UUID.**
->
-> UUIDs (`018f3c9e-7b1a-4c2d-9f8e-2a1b3c4d5e6f`) are internal record ids. They
-> show up in API payloads, database rows, and admin tooling, and they look
-> authoritative, which is exactly why they get pasted here. They are not
-> credentials and will never authenticate.
+The customer extid is a short, opaque identifier that begins with `ur` — for
+example `ur1abc23def`. It is shown, with a copy button, at the bottom of the
+user menu when you are signed in. Other identifiers the API uses are not
+interchangeable with it.
 
-| Value | Use as `organization`? | Where it comes from |
-|---|---|---|
-| `on1abc23def` | **Yes** | Bottom of the user menu when signed in — click the copy button next to the `on…` identifier |
-| `018f3c9e-7b1a-4c2d-9f8e-2a1b3c4d5e6f` | No — internal record UUID | API response bodies, admin tooling, database ids |
-| `you@example.com` | No — that was the 0.5.x `custid` | Your login email; not used for API auth since 0.6 |
-
-The client checks the format at construction, so the wrong identifier fails
-immediately instead of at the first request:
+The format is checked at construction, so a value of the wrong kind fails
+immediately rather than at the first request:
 
 ```ruby
-Onetime::Client.new(
-  base_url:     "https://us.onetimesecret.com",
-  organization: "018f3c9e-7b1a-4c2d-9f8e-2a1b3c4d5e6f",
-  api_token:    ENV["ONETIME_API_TOKEN"],
-)
-# => Onetime::ConfigurationError: organization "018f3c9e-..." looks like an
-#    internal record UUID, not an organization extid. UUIDs appear in API
-#    payloads and admin tooling but are not credentials. Your organization
-#    extid is the "on…" identifier at the bottom of the user menu when you are
-#    signed in (there is a copy button next to it). Pass it as organization: or
-#    set ONETIME_ORG_EXTID.
+Onetime::Client.new(base_url: "https://us.onetimesecret.com",
+                    customer: "acct-123", api_token: ENV["ONETIME_API_TOKEN"])
+# => Onetime::ConfigurationError: customer "acct-123" is not a customer extid:
+#    extids begin with "ur" (e.g. "ur1abc23def"). ...
 ```
 
 #### When credentials are silently ignored
 
 Some server versions accept a request carrying unusable credentials and create
 the secret **anonymously** instead of returning 401. The call succeeds, you get
-a working link, and it never appears in your organization's account.
+a working link, and it never appears in your account.
 
 The client watches for that: when a client with credentials receives a record
 the server marked as anonymous, it warns once (to `logger` if you passed one,
@@ -146,15 +129,15 @@ Regional API hosts:
 |----------------|-----------------------------------------------|-----------------------------------------|
 | `base_url`     | — (**required**)                              | Region/self-hosted/custom domain        |
 | `api_version`  | `:v2`                                          | `:v1` or `:v2`                          |
-| `organization` | `ENV["ONETIME_ORG_EXTID"]`                     | Organization extid (`on...`)            |
+| `customer`     | `ENV["ONETIME_CUSTOMER_EXTID"]`                | Customer extid (`ur...`)                |
 | `api_token`    | `ENV["ONETIME_API_TOKEN"]`                     | API token                               |
 | `timeout`      | `30`                                           | Read timeout (seconds)                  |
 | `open_timeout` | `10`                                           | Connect timeout (seconds)               |
 | `max_retries`  | `2`                                            | Retries for idempotent (GET) requests   |
 | `on_unowned`   | `:warn`                                        | `:warn`, `:raise` or `:ignore` — see [above](#when-credentials-are-silently-ignored) |
 
-Environment fallbacks: `base_url` ← `ONETIME_BASE_URL`; `organization` ←
-`ONETIME_ORG_EXTID`; `api_token` ← `ONETIME_API_TOKEN`.
+Environment fallbacks: `base_url` ← `ONETIME_BASE_URL`; `customer` ←
+`ONETIME_CUSTOMER_EXTID`; `api_token` ← `ONETIME_API_TOKEN`.
 
 Clients are thread-safe: they hold only configuration and a stateless
 transport, opening a fresh connection per request.
@@ -249,7 +232,7 @@ end
 | `Onetime::RateLimitError` | 429 / `LimitExceeded` (see `#retry_after`) |
 | `Onetime::ServerError` | 5xx |
 | `Onetime::TransportError` / `TimeoutError` | network failures |
-| `Onetime::ConfigurationError` | bad `base_url`, wrong `organization` format, incomplete credentials (raised at construction) |
+| `Onetime::ConfigurationError` | bad `base_url`, malformed `customer` extid, incomplete credentials (raised at construction) |
 | `Onetime::UnownedResponseError` | a *successful* response the server recorded as anonymous, with `on_unowned: :raise` |
 
 All inherit from `Onetime::Error`.

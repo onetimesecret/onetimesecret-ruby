@@ -11,7 +11,7 @@ module Onetime
   #
   #   client = Onetime::Client.new(
   #     base_url:     "https://us.onetimesecret.com",
-  #     organization: "on1abc23def", # organization extid, not a UUID
+  #     customer:     "ur1abc23def", # customer extid
   #     api_token:    ENV["ONETIME_API_TOKEN"],
   #     api_version:  :v2,           # :v1 or :v2
   #   )
@@ -24,16 +24,15 @@ module Onetime
   # stateless transport, and a mutex-guarded flag for the once-only unowned
   # warning, and creates a fresh Net::HTTP connection per request.
   class Client
-    # Explains a successful-but-unowned response. Long on purpose: it is the
-    # only signal the caller gets that their credentials were ignored.
+    # Explains a successful-but-unowned response. Deliberately detailed: it is
+    # the only signal the caller gets that their credentials were ignored.
     UNOWNED_WARNING = <<~MSG.gsub("\n", " ").strip
       The server recorded this secret as anonymous even though this client sent
-      credentials, so it does not belong to your organization and will not
-      appear in your account. The credentials were most likely not accepted:
-      check that `organization` is your organization extid (the "on…"
-      identifier at the bottom of the user menu, not an internal UUID) and that
-      the API token belongs to that organization. Pass `on_unowned: :raise` to
-      turn this into an exception, or `:ignore` to silence it.
+      credentials, so it has no owner and will not appear in your account. The
+      credentials were most likely not accepted: check that `customer` is your
+      customer extid (the "ur…" identifier at the bottom of the user menu) and
+      that the API token belongs to it. Pass `on_unowned: :raise` to turn this
+      into an exception, or `:ignore` to silence it.
     MSG
 
     attr_reader :config, :transport
@@ -108,8 +107,8 @@ module Onetime
       "#{config.api_path_prefix}#{path}"
     end
 
-    # Belt and braces for servers that accept unusable credentials instead of
-    # rejecting them: a 2xx record marked anonymous, from a client that sent
+    # Catches servers that accept unusable credentials instead of rejecting
+    # them: a 2xx record marked anonymous, from a client that sent
     # credentials, means those credentials did nothing. Guest routes are
     # exempt — being ownerless is the point of asking for one.
     def check_ownership(response, path)
@@ -125,9 +124,9 @@ module Onetime
       warn_unowned
     end
 
-    # Once per client: enough to be noticed, not enough to flood a log. The
-    # claim-and-set is synchronized so concurrent requests on a shared client
-    # warn exactly once rather than racing.
+    # Warns once per client rather than once per request, to keep a long-lived
+    # process from filling its log. The claim-and-set is synchronized so
+    # concurrent requests on a shared client warn exactly once.
     def warn_unowned
       claimed = @unowned_lock.synchronize do
         @unowned_warned ? false : (@unowned_warned = true)

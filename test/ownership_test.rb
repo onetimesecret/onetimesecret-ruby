@@ -3,7 +3,7 @@
 require_relative "test_helper"
 
 # Onetime::Ownership decides whether a response describes a record the server
-# recorded as anonymous. "Cannot tell" (nil) is a first-class answer.
+# recorded as anonymous. nil is a valid answer, meaning "cannot determine".
 class OwnershipTest < Minitest::Test
   def unowned?(data)
     Onetime::Ownership.unowned?(
@@ -18,8 +18,8 @@ class OwnershipTest < Minitest::Test
   end
 
   def test_real_custid_is_owned
-    assert_equal false, unowned?({ "record" => { "custid" => "on1abc23def" } })
-    assert_equal false, unowned?({ "details" => { "owner" => "on1abc23def" } })
+    assert_equal false, unowned?({ "record" => { "custid" => "ur1abc23def" } })
+    assert_equal false, unowned?({ "details" => { "owner" => "ur1abc23def" } })
   end
 
   def test_anonymous_flags_including_v2_string_booleans
@@ -37,7 +37,7 @@ class OwnershipTest < Minitest::Test
   end
 
   def test_any_anonymous_record_wins_over_an_owned_sibling
-    data = { "record" => { "custid" => "on1abc23def", "secret" => { "custid" => "anon" } } }
+    data = { "record" => { "custid" => "ur1abc23def", "secret" => { "custid" => "anon" } } }
     assert_equal true, unowned?(data)
   end
 end
@@ -48,7 +48,7 @@ class ClientUnownedResponseTest < Minitest::Test
   include ClientTestHelpers
 
   ANON_BODY  = { "record" => { "custid" => "anon", "secret" => { "identifier" => "abc" } } }.freeze
-  OWNED_BODY = { "record" => { "custid" => "on1example" } }.freeze
+  OWNED_BODY = { "record" => { "custid" => "ur1example" } }.freeze
 
   # Captures logger.warn calls without pulling in a logging library.
   class WarnLogger
@@ -79,7 +79,7 @@ class ClientUnownedResponseTest < Minitest::Test
 
     assert_equal 1, logger.warnings.size, "the warning should not repeat per request"
     assert_match(/recorded this secret as anonymous/, logger.warnings.first)
-    assert_match(/organization extid/, logger.warnings.first)
+    assert_match(/customer extid/, logger.warnings.first)
   end
 
   # Clients are documented as shareable across threads, so the once-only

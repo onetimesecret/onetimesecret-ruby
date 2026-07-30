@@ -6,19 +6,18 @@ module Onetime
   # Immutable-ish configuration for a Client instance.
   #
   # Authentication uses HTTP Basic, where the username slot carries the
-  # *organization external id* (extid) — the identifier that begins with
-  # "on" and is shown (with a copy button) at the bottom of the user menu
-  # when signed in. The password slot carries your API token.
+  # *customer external id* (extid) — the identifier that begins with "ur" and
+  # is shown (with a copy button) at the bottom of the user menu when signed
+  # in. The password slot carries your API token.
   #
-  # The extid is not an internal record UUID and not an email address; both
-  # are rejected by #validate! with a message naming the mistake, because
-  # both otherwise fail as an opaque 401 (or, worse, as a secret the server
-  # quietly records as anonymous — see Onetime::Ownership).
+  # #validate! checks the extid's format, so a value of the wrong kind fails
+  # at construction rather than as an opaque 401 — or as a secret the server
+  # records as anonymous (see Onetime::Ownership).
   #
   # Values fall back to environment variables:
-  #   ONETIME_BASE_URL    -> base_url
-  #   ONETIME_ORG_EXTID   -> organization
-  #   ONETIME_API_TOKEN   -> api_token
+  #   ONETIME_BASE_URL        -> base_url
+  #   ONETIME_CUSTOMER_EXTID  -> customer
+  #   ONETIME_API_TOKEN       -> api_token
   class Configuration
     DEFAULT_API_VERSION  = :v2
     SUPPORTED_VERSIONS   = %i[v1 v2].freeze
@@ -32,22 +31,16 @@ module Onetime
     # that were sent but not honoured.
     ON_UNOWNED_MODES = %i[warn raise ignore].freeze
 
-    # An organization extid is a short, opaque, case-insensitive identifier
-    # that always begins with "on" — e.g. "on1abc23def". It is neither a
-    # UUID (internal record id) nor an email address; both are common
-    # mix-ups, and both are rejected below with a message that says so.
-    ORG_EXTID_PATTERN = /\Aon[a-z0-9]+\z/i
+    # A customer extid is a short, opaque, case-insensitive identifier that
+    # always begins with "ur" — e.g. "ur1abc23def".
+    CUSTOMER_EXTID_PATTERN = /\Aur[a-z0-9]+\z/i
 
-    # Internal record ids, which are *not* usable as credentials. Matched
-    # with and without dashes since both forms get pasted.
-    UUID_PATTERN = /\A\h{8}-?\h{4}-?\h{4}-?\h{4}-?\h{12}\z/
-
-    # Where to find the real value. Repeated in every rejection message
-    # because "invalid organization" without this is a support ticket.
-    ORG_EXTID_HINT =
-      'Your organization extid is the "on…" identifier at the bottom of the ' \
+    # Included in the rejection message: an invalid-format error is only
+    # actionable if it says where the valid value lives.
+    CUSTOMER_EXTID_HINT =
+      'Your customer extid is the "ur…" identifier at the bottom of the ' \
       "user menu when you are signed in (there is a copy button next to it). " \
-      "Pass it as organization: or set ONETIME_ORG_EXTID."
+      "Pass it as customer: or set ONETIME_CUSTOMER_EXTID."
 
     # The apex domain and its www host serve the company website, not the
     # API. Regional deployments each have their own host.
@@ -61,18 +54,18 @@ module Onetime
       ca.onetimesecret.com nz.onetimesecret.com
     ].freeze
 
-    attr_accessor :base_url, :api_version, :organization, :api_token,
+    attr_accessor :base_url, :api_version, :customer, :api_token,
                   :timeout, :open_timeout, :max_retries,
                   :user_agent, :logger, :transport, :default_headers,
                   :on_unowned
 
-    def initialize(base_url: nil, api_version: nil, organization: nil,
+    def initialize(base_url: nil, api_version: nil, customer: nil,
                    api_token: nil, timeout: nil, open_timeout: nil, max_retries: nil,
                    user_agent: nil, logger: nil, transport: nil, default_headers: nil,
                    on_unowned: nil)
       @base_url        = base_url || ENV["ONETIME_BASE_URL"]
       @api_version     = normalize_version(api_version || DEFAULT_API_VERSION)
-      @organization    = organization || ENV["ONETIME_ORG_EXTID"]
+      @customer    = customer || ENV["ONETIME_CUSTOMER_EXTID"]
       @api_token       = api_token || ENV["ONETIME_API_TOKEN"]
       @timeout         = timeout || DEFAULT_TIMEOUT
       @open_timeout    = open_timeout || DEFAULT_OPEN_TIMEOUT
@@ -89,7 +82,7 @@ module Onetime
     # True when no credentials are configured. Anonymous clients can still
     # use public and /guest/* endpoints.
     def anonymous?
-      organization.to_s.empty? && api_token.to_s.empty?
+      customer.to_s.empty? && api_token.to_s.empty?
     end
 
     # The mount prefix for the configured API version, e.g. "/api/v2".
@@ -143,37 +136,25 @@ module Onetime
     end
 
     def validate_credentials!
-      validate_organization_format! unless organization.to_s.empty?
+      validate_customer_format! unless customer.to_s.empty?
 
       # Partial credentials are almost always a mistake; fail loudly.
-      return unless organization.to_s.empty? ^ api_token.to_s.empty?
+      return unless customer.to_s.empty? ^ api_token.to_s.empty?
 
-      missing = organization.to_s.empty? ? "organization" : "api_token"
+      missing = customer.to_s.empty? ? "customer" : "api_token"
       raise ConfigurationError, "Incomplete credentials: #{missing} is missing"
     end
 
-    # Catch the wrong-identifier mistake at construction time rather than as a
-    # 401 — or worse, as a silently unowned secret — several calls later.
-    def validate_organization_format!
-      value = organization.to_s
-      return if ORG_EXTID_PATTERN.match?(value)
+    # Catch an identifier of the wrong kind at construction time rather than
+    # as a 401 — or as a silently unowned secret — several calls later.
+    def validate_customer_format!
+      value = customer.to_s
+      return if CUSTOMER_EXTID_PATTERN.match?(value)
 
       raise ConfigurationError,
-            "#{organization_rejection_reason(value)} #{ORG_EXTID_HINT}"
-    end
-
-    def organization_rejection_reason(value)
-      if UUID_PATTERN.match?(value)
-        "organization #{value.inspect} looks like an internal record UUID, " \
-          "not an organization extid. UUIDs appear in API payloads and admin " \
-          "tooling but are not credentials."
-      elsif value.include?("@")
-        "organization #{value.inspect} looks like an email address. Email " \
-          "addresses (the 0.5.x custid) are no longer used to authenticate."
-      else
-        "organization #{value.inspect} is not an organization extid: extids " \
-          'begin with "on" (e.g. "on1abc23def").'
-      end
+            "customer #{value.inspect} is not a customer extid: extids begin " \
+            'with "ur" (e.g. "ur1abc23def"). ' \
+            "#{CUSTOMER_EXTID_HINT}"
     end
 
     def validate_on_unowned!

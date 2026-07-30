@@ -21,8 +21,8 @@ module Onetime
 
   # Raised (when on_unowned: :raise) for a successful response describing a
   # record the server recorded as anonymous even though the client sent
-  # credentials — i.e. the credentials were not honoured, and the secret does
-  # not belong to your organization. See Onetime::Ownership.
+  # credentials — i.e. the credentials were not honoured, and the secret has
+  # no owner. See Onetime::Ownership.
   class UnownedResponseError < Error
     attr_reader :response
 
@@ -80,7 +80,7 @@ module Onetime
     # Used only when the server sends no message of its own.
     ACCOUNT_REQUIRED_MESSAGE =
       "This operation requires an authenticated account: send your " \
-      "organization extid and API token (see Onetime::Client.new)."
+      "customer extid and API token (see Onetime::Client.new)."
 
     # Maps the ADR-013 error_type (the machine-readable class name the
     # server sends) to a client exception class. Falls through to status
