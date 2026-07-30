@@ -3,7 +3,7 @@
 require_relative "test_helper"
 
 class ConfigurationTest < Minitest::Test
-  REGION = "https://us.onetimesecret.com"
+  REGION = "https://ca.onetimesecret.com"
 
   def test_defaults
     config = Onetime::Configuration.new

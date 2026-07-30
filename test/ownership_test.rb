@@ -133,7 +133,7 @@ class ClientUnownedResponseTest < Minitest::Test
     transport = FakeTransport.new(data: ANON_BODY)
     logger = WarnLogger.new
     client = Onetime::Client.new(
-      base_url: "https://us.onetimesecret.com", transport: transport,
+      base_url: "https://ca.onetimesecret.com", transport: transport,
       logger: logger, on_unowned: :raise
     )
 

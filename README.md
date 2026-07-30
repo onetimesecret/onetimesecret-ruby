@@ -47,7 +47,7 @@ client = Onetime::Client.new(
 )
 
 # Conceal a secret you already have
-res = client.secrets.conceal(secret: "hunter2", ttl: 3600, passphrase: "pw")
+res = client.secrets.conceal(secret: "hunter2", ttl: 3600, passphrase: "pw12")
 res.dig("record", "receipt", "identifier")  # the receipt (creator) key
 res.dig("record", "secret", "identifier")   # the secret (recipient) key
 
@@ -55,7 +55,7 @@ res.dig("record", "secret", "identifier")   # the secret (recipient) key
 client.secrets.generate(ttl: 86_400)
 
 # Reveal (consume) a secret — one-time only
-secret = client.secrets.reveal("abc123secretkey", passphrase: "pw")
+secret = client.secrets.reveal("abc123secretkey", passphrase: "pw12")
 secret.dig("record", "secret_value")
 
 # Service status (works on v1 and v2)
@@ -76,7 +76,7 @@ The format is checked at construction, so a value of the wrong kind fails
 immediately rather than at the first request:
 
 ```ruby
-Onetime::Client.new(base_url: "https://us.onetimesecret.com",
+Onetime::Client.new(base_url: "https://ca.onetimesecret.com",
                     customer: "acct-123", api_token: ENV["ONETIME_API_TOKEN"])
 # => Onetime::ConfigurationError: customer "acct-123" is not a customer extid:
 #    extids begin with "ur" (e.g. "ur1abc23def"). ...
@@ -142,7 +142,7 @@ A client created without credentials is anonymous and can use public and guest
 endpoints:
 
 ```ruby
-guest = Onetime::Client.new(base_url: "https://us.onetimesecret.com")  # no credentials
+guest = Onetime::Client.new(base_url: "https://ca.onetimesecret.com")  # no credentials
 guest.secrets.conceal(secret: "no account needed", guest: true)
 ```
 

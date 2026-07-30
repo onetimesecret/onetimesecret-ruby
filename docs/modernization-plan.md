@@ -123,7 +123,7 @@ truth for request/response shapes and should drive contract tests.
 require "onetime"
 
 client = Onetime::Client.new(
-  base_url:     "https://us.onetimesecret.com", # region/self-hosted/custom (required)
+  base_url:     "https://ca.onetimesecret.com", # region/self-hosted/custom (required)
   api_version:  :v3,                            # :v3 (default), :v2, :v1 (shim)
   customer:     "ur1abc23def",                  # customer extid (HTTP Basic username)
   api_token:    ENV["ONETIME_API_TOKEN"],       # HTTP Basic token (v2) ...
@@ -134,7 +134,7 @@ client = Onetime::Client.new(
 
 # Conceal a secret you already have
 receipt = client.secrets.conceal(secret: "hunter2", ttl: 3600, passphrase: "pw")
-receipt.secret_url      # => "https://us.onetimesecret.com/secret/abc..."
+receipt.secret_url      # => "https://ca.onetimesecret.com/secret/abc..."
 receipt.receipt_url
 receipt.ttl             # => 3600 (Integer, regardless of v2/v3)
 

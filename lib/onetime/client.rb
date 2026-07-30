@@ -10,7 +10,7 @@ module Onetime
   # The main entry point for the OnetimeSecret API client.
   #
   #   client = Onetime::Client.new(
-  #     base_url:     "https://us.onetimesecret.com",
+  #     base_url:     "https://ca.onetimesecret.com",
   #     customer:     "ur1abc23def", # customer extid
   #     api_token:    ENV["ONETIME_API_TOKEN"],
   #     api_version:  :v2,           # :v1 or :v2
