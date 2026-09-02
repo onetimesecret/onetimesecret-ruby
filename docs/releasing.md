@@ -1,81 +1,135 @@
 # Releasing
 
-## Gem name and repository name
+## Package and repository names
 
-- **`onetime`** is the gem, on RubyGems. That name is correct and settled — it
-  is not changing.
-- **`onetime-ruby`** is this repository: the Ruby SDK of the OnetimeSecret SDK
-  family, one per language. The repository name is not the package name, so
-  never write `gem "onetime-ruby"`.
+- **`onetimesecret`** is the canonical RubyGem beginning with version 0.7.0.
+- **`onetime`** is a dependency-only compatibility package beginning with
+  version 0.7.0. It contains no implementation files and directs users to
+  `onetimesecret`.
+- **`onetime-ruby`** remains the repository name for the Ruby SDK. Repository
+  names and RubyGems package names do not need to match.
 
-## Version history and install instructions
+The Ruby namespace remains `Onetime`. The canonical package supports both
+`require "onetimesecret"` and the legacy `require "onetime"` load path.
 
-Prior to 0.6.0 there was a long gap to the next most recent release which is 
-**0.5.1 (2013-02-12)**, the old `drydock`-based command-line tool: the same 
-gem. Consequently, all documentation references `gem "onetime", "~> 0.6"`, as 
-this pessimistic constraint is what prevents package resolvers from falling 
-back to the obsolete 0.5.1 release.
+## Version history and migration
 
+`onetime` 0.6.0 was the final implementation release under the shortened
+package name. The canonical package starts at `onetimesecret` 0.7.0. Existing
+applications should replace:
+
+```ruby
+gem "onetime", "~> 0.6"
+```
+
+with:
+
+```ruby
+gem "onetimesecret", "~> 0.7.0"
+```
+
+The `onetime` 0.7 compatibility package depends on `onetimesecret`, so users
+with compatible version constraints can transition without conflicting library
+files. Exact pins and `~> 0.6.0` constraints require a manual Gemfile update.
 
 ## One-time setup: Trusted Publishing
 
 `.github/workflows/release.yml` authenticates with RubyGems over OIDC, so no
-API key lives in this repository. Configure the trusted publisher once, as an
-owner of the gem:
+API key lives in this repository.
 
-1. Go to <https://rubygems.org/gems/onetime/trusted_publishers> → **Create**.
-2. Repository: `onetimesecret/onetime-ruby`.
-3. Workflow filename: `release.yml`.
-4. Environment: `rubygems.org`.
-5. In GitHub (Settings → Environments), gate the matching `rubygems.org`
-   environment: restrict its deployment branches to `main` and the `v*` tags,
-   and add required reviewers if you want a human in the loop. Do this even
-   though the environment appears on its own — referencing a name in a
-   workflow auto-creates it *unprotected*, so an environment that exists is
-   not evidence that anything is gating it.
+### Canonical package
 
-   This is the only control on the release job. That job holds `id-token:
-   write` (it mints a RubyGems publishing token) and `contents: write`, and
-   it runs on any `v*` tag, from any ref, until a branch policy says
-   otherwise.
+Because `onetimesecret` is a new package, create a pending trusted publisher
+from the RubyGems profile before its first release:
 
-Note the asymmetry in the steps above: the trusted publisher is registered
-against the **gem** (`onetime`) but points at the **repository**
-(`onetime-ruby`).
+1. Gem name: `onetimesecret`.
+2. Repository owner: `onetimesecret`.
+3. Repository: `onetime-ruby`.
+4. Workflow filename: `release.yml`.
+5. Environment: `rubygems.org`.
 
-The environment name is compared as a plain string against the OIDC token's
-`environment` claim, so `environment:` in `release.yml` and the RubyGems
-record must agree character for character. A mismatch fails the publish step
-with `No trusted publisher configured for this workflow found ... for
-audience rubygems.org` — the `rubygems.org` there is the *audience* claim,
-which is always that value and is not the environment.
+After the first successful push, RubyGems converts the pending publisher into a
+normal trusted publisher and adds its creator as a gem owner.
 
-## Cutting a release
+### Compatibility package
+
+The existing `onetime` trusted publisher must continue to point to:
+
+1. Repository: `onetimesecret/onetime-ruby`.
+2. Workflow filename: `release.yml`.
+3. Environment: `rubygems.org`.
+
+A single workflow may be trusted by both packages.
+
+### GitHub environment
+
+In GitHub Settings → Environments, gate the `rubygems.org` environment:
+
+- Restrict deployment tags to `v*` and `onetime-v*`.
+- Add required reviewers when a human release gate is desired.
+
+Referencing an environment from a workflow creates it without protection.
+Configure these rules before releasing. The environment name is compared as a
+plain string with the OIDC token claim, so the workflow and both RubyGems
+publisher records must match exactly.
+
+## Cutting a canonical release
 
 1. Make sure `main` is green in CI.
-2. Set the version in `lib/onetime/version.rb` (single source of truth — the
-   gemspec reads it, and the release workflow checks the tag against it).
-3. Update `CHANGES.txt`: replace the `(unreleased …)` marker on the top
-   section with the release date.
-4. Commit: `git commit -am "Release 0.6.0"`.
-5. Tag and push:
+2. Set the version in `lib/onetime/version.rb`.
+3. Update `CHANGES.txt` with the release date and notes.
+4. Confirm the compatibility package dependency range remains appropriate.
+5. Commit the release changes.
+6. Tag and push:
 
    ```sh
-   git tag -a v0.6.0 -m "onetime 0.6.0"
+   git tag -a v0.7.0 -m "onetimesecret 0.7.0"
    git push origin main
-   git push origin v0.6.0
+   git push origin v0.7.0
    ```
 
-6. The tag push runs `Release`, which verifies the tag/version match, runs the
-   tests, builds the gem, pushes it to RubyGems, and creates the GitHub
-   release.
-7. Verify: `gem info onetime --remote` shows 0.6.0, and
-   `gem install onetime -v 0.6.0` works in a clean environment.
-8. Check that `README.md`'s install section still matches what is published —
-   the version constraint it asks for, and the 0.5.x caveat.
+The tag runs the canonical release job, which checks the tag against
+`Onetime::VERSION`, runs the test suite, builds the gem, and pushes it to
+RubyGems.
+
+Verify:
+
+```sh
+gem info onetimesecret --remote
+gem install onetimesecret -v 0.7.0
+```
+
+## Cutting a compatibility release
+
+Publish the canonical version first. Then:
+
+1. Set the literal version and `onetimesecret` dependency requirement in
+   `compat/onetime/onetime.gemspec`.
+2. Confirm `onetimesecret` at the required version is available from RubyGems.
+3. Commit any compatibility-package changes.
+4. Tag and push with the compatibility prefix:
+
+   ```sh
+   git tag -a onetime-v0.7.0 -m "onetime compatibility package 0.7.0"
+   git push origin onetime-v0.7.0
+   ```
+
+The compatibility release job checks the prefixed tag against the stub gemspec,
+builds the dependency-only gem from `compat/onetime`, and pushes it to
+RubyGems.
+
+Verify:
+
+```sh
+gem info onetime --remote
+gem install onetime -v 0.7.0
+```
+
+The install must bring in `onetimesecret`, display the migration message, and
+continue to support `require "onetime"`.
 
 ## Versioning
 
-SemVer, continuing the gem's existing 0.x line. 0.6.0 is a clean break from
-0.5.x with no compatibility shim, so 0.5.x users are new adopters rather than
-upgraders — but the version stays below 1.0 until the API surface has settled.
+The client remains below 1.0 until its API surface has settled. Keep canonical
+and compatibility versions aligned when publishing a redirect release. Do not
+publish implementation files in the `onetime` compatibility package.

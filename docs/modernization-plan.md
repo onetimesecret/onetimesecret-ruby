@@ -2,10 +2,10 @@
 
 > Status: Draft for review · Date: 2026-06-19 · Target: `1.0.0`
 >
-> Update: the first release under this plan ships as **`0.6.0`**, continuing the
-> gem's existing 0.x line rather than jumping to 1.0.0. The version stays below
-> 1.0 until the API surface has settled; references to "1.0" below describe this
-> body of work, not the version number.
+> Update: the first release under this plan shipped as `onetime` **0.6.0**. The
+> canonical package becomes `onetimesecret` in **0.7.0**, with `onetime` retained
+> only as a compatibility package. The version stays below 1.0 until the API
+> surface has settled; references to "1.0" below describe this body of work.
 
 This document is the implementation plan for bringing the official Ruby client
 from its current 2013-era state (`v0.5.1`) up to a modern, Ruby 3 client library
@@ -120,7 +120,7 @@ truth for request/response shapes and should drive contract tests.
 ## 5. Proposed Public API (sketch)
 
 ```ruby
-require "onetime"
+require "onetimesecret"
 
 client = Onetime::Client.new(
   base_url:     "https://ca.onetimesecret.com", # region/self-hosted/custom (required)
@@ -244,9 +244,9 @@ compatibility is maintained:
    presenting a session from a server-to-server client (vs. relying on v2
    API-token basic auth or `/guest/*`). *This determines whether headless v3
    automation is fully supported or steers integrators to v2.*
-2. ~~**Gem name**~~ — **resolved: the gem stays `onetime`.** `onetime-ruby` is
-   the repository name — this being the Ruby SDK of a per-language family — and
-   is never a package name.
+2. ~~**Gem name**~~ — **resolved: the canonical gem is `onetimesecret`.**
+   `onetime` 0.7 is a dependency-only compatibility package. `onetime-ruby`
+   remains the repository name for the Ruby SDK.
 3. **Idempotency/retries** — confirm which endpoints are safe to auto-retry
    (GETs and status; conceal/generate are not idempotent).
 4. **OpenAPI spec distribution** — is the generated spec published at a stable

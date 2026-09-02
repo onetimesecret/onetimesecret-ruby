@@ -9,18 +9,18 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: rubygems
-  directory: "/"
-  schedule:
-    interval: weekly
-  open-pull-requests-limit: 10
-  labels:
-    - dependencies
-    - ruby
-  versioning-strategy: lockfile-only
-  groups:
-    dev-deps:
-      dependency-type: development
-    test-deps:
-      patterns:
-        - "rspec*"
-        - "rubocop*"
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - ruby
+    versioning-strategy: lockfile-only
+    groups:
+      dev-deps:
+        dependency-type: development
+      test-deps:
+        patterns:
+          - "rspec*"
+          - "rubocop*"

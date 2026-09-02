@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+require "bundler/gem_helper"
+
+gem_helper = Bundler::GemHelper.new
+gem_helper.tag_prefix = "onetime-"
+gem_helper.install

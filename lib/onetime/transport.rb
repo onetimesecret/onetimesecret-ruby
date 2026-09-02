@@ -188,8 +188,8 @@ module Onetime
       }.merge(@config.default_headers)
     end
 
-    # Identifies the SDK, not the gem: "onetime-ruby" tells the service which
-    # of the per-language clients is calling. The gem itself is `onetime`.
+    # Identifies the SDK repository, not the RubyGems package: "onetime-ruby"
+    # tells the service which of the per-language clients is calling.
     def default_user_agent
       "onetime-ruby/#{Onetime::VERSION} (Ruby/#{RUBY_VERSION})"
     end

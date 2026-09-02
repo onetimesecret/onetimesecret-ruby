@@ -1,38 +1,30 @@
 name: Release
 
-# Publishes the gem to RubyGems when a v* tag is pushed.
-#
-# Authentication is RubyGems Trusted Publishing (OIDC) — no API key is stored
-# in this repository. The trusted publisher for the `onetime` gem must be
-# configured once at
-# https://rubygems.org/gems/onetime/trusted_publishers
-# (repository onetimesecret/onetime-ruby, workflow release.yml,
-# environment rubygems.org). The environment name below must match that
-# record exactly — RubyGems compares it to the OIDC token's `environment`
-# claim as a plain string. See docs/releasing.md.
+# Publishes the canonical gem from v* tags and the dependency-only compatibility
+# gem from onetime-v* tags. Both use RubyGems Trusted Publishing (OIDC), so no
+# API key is stored in this repository. See docs/releasing.md for the required
+# publisher records and release order.
 
 on:
   push:
     tags:
       - "v*"
+      - "onetime-v*"
 
 permissions:
   contents: read
 
 jobs:
-  release:
-    name: Build and publish
+  canonical:
+    name: Publish onetimesecret
+    if: startsWith(github.ref_name, 'v')
     runs-on: ubuntu-latest
     environment:
       name: rubygems.org
-      url: https://rubygems.org/gems/onetime
+      url: https://rubygems.org/gems/onetimesecret
     permissions:
-      contents: write # create the GitHub release
+      contents: write # Bundler's release task may push its version tag
       id-token: write # mint the OIDC token RubyGems verifies
-    # This job can mint a RubyGems publishing token and write to the
-    # repository, so every action is pinned to an immutable commit SHA: a
-    # moved upstream tag must not be able to swap out code running with those
-    # permissions. Dependabot keeps the pins current (.github/dependabot.yml).
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -43,8 +35,6 @@ jobs:
           ruby-version: "3.3"
           bundler-cache: true
 
-      # A tag that disagrees with lib/onetime/version.rb would publish a gem
-      # nobody can find by tag. Fail before anything is pushed.
       - name: Verify the tag matches Onetime::VERSION
         run: |
           version="$(ruby -Ilib -ronetime/version -e 'print Onetime::VERSION')"
@@ -59,3 +49,40 @@ jobs:
 
       - name: Publish to RubyGems
         uses: rubygems/release-gem@7f9650160c1a4e7989fdc9855807bdbd421d8b6b # v1.4.1
+
+  compatibility:
+    name: Publish onetime compatibility package
+    if: startsWith(github.ref_name, 'onetime-v')
+    runs-on: ubuntu-latest
+    environment:
+      name: rubygems.org
+      url: https://rubygems.org/gems/onetime
+    permissions:
+      contents: write # Bundler's release task may push its version tag
+      id-token: write # mint the OIDC token RubyGems verifies
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/compat/onetime/Gemfile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Verify the tag matches the compatibility package version
+        working-directory: compat/onetime
+        run: |
+          version="$(ruby -e 'print Gem::Specification.load("onetime.gemspec").version')"
+          tag="${GITHUB_REF_NAME#onetime-v}"
+          if [ "$version" != "$tag" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match onetime.gemspec ($version)" >&2
+            exit 1
+          fi
+
+      - name: Publish to RubyGems
+        uses: rubygems/release-gem@7f9650160c1a4e7989fdc9855807bdbd421d8b6b # v1.4.1
+        with:
+          working-directory: compat/onetime
