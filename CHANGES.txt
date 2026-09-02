@@ -1,6 +1,16 @@
-ONETIME, CHANGES
+ONETIMESECRET, CHANGES
 
-#### 0.6.0 (unreleased; tag v0.6.0 to publish) #########
+#### 0.7.0 (unreleased; tag v0.7.0 to publish) #########
+
+* CHANGE: The canonical RubyGems package is now `onetimesecret`. Replace
+  `gem "onetime"` with `gem "onetimesecret"` in Gemfiles. The Ruby namespace
+  remains `Onetime`, and both `require "onetimesecret"` and `require "onetime"`
+  are supported. See docs/releasing.md for release and migration details.
+
+* DEPRECATED: `onetime` 0.7 is a dependency-only compatibility package that
+  installs `onetimesecret` and directs users to the canonical package.
+
+#### 0.6.0 (2026-07-30) ###############################
 
   The first release of the `onetime` gem since 0.5.1 (2013): the same gem,
   cleaned up and brought current. The API surface changes completely, and
@@ -98,5 +108,3 @@ ONETIME, CHANGES
 #### 0.3.0 (2012-01-06) ###############################
 
 Initial public release
-
-

@@ -1,11 +1,11 @@
-# OnetimeSecret Ruby Client
+# Onetime Secret Ruby Client
 
 The official Ruby client for the [OnetimeSecret](https://onetimesecret.com)
 API. Share sensitive information through a link that can only be viewed once.
 
-The gem is **`onetime`**. This repository, **`onetime-ruby`**, is the Ruby SDK
-in the OnetimeSecret SDK family — each language has its own repository, and the
-repository name is not the package name.
+The canonical gem is **`onetimesecret`**. This repository, **`onetime-ruby`**,
+is the Ruby SDK in the OnetimeSecret SDK family — each language has its own
+repository, and the repository name is not the package name.
 
 - **Zero runtime dependencies** — built entirely on the Ruby standard library
   (`net/http`, `uri`, `json`), so it drops into any environment without pulling
@@ -22,22 +22,26 @@ repository name is not the package name.
 ## Installation
 
 ```sh
-gem install onetime
+gem install onetimesecret
 ```
 
 Or in a Gemfile:
 
 ```ruby
-gem "onetime", "~> 0.6"   # the constraint matters, see below
+gem "onetimesecret", "~> 0.7.0"
 ```
 
+The package was published as `onetime` through version 0.6.0. The `onetime`
+0.7 compatibility package installs `onetimesecret`, but existing applications
+should update their Gemfiles directly. The Ruby namespace remains `Onetime`,
+and `require "onetime"` remains supported.
 
 Maintainers: see [docs/releasing.md](docs/releasing.md).
 
 ## Quick start
 
 ```ruby
-require "onetime"
+require "onetimesecret"
 
 client = Onetime::Client.new(
   base_url:    "https://ca.onetimesecret.com", # choose your region's API host (required)
