@@ -3,7 +3,7 @@
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 
 require "minitest/autorun"
-require "onetime"
+require "onetimesecret"
 
 # A transport double that records the last request and returns a canned
 # Response. Lets us assert on method/path/body/form without any network or

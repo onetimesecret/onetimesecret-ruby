@@ -4,8 +4,8 @@ module Onetime
   # Library version. Source of truth for the gemspec, the release workflow's
   # tag check, and the X-Onetime-Client / User-Agent request headers.
   #
-  # Note for anyone comparing against RubyGems: 0.5.1 (2013) and earlier are
-  # the command-line tool that shipped under this gem name. 0.6.0 is the
-  # cleaned-up client library.
-  VERSION = "0.6.0"
+  # The client was published as `onetime` through 0.6.0. Starting with 0.7.0,
+  # the canonical RubyGems package is `onetimesecret`; the Ruby namespace and
+  # load paths remain unchanged.
+  VERSION = "0.7.0"
 end

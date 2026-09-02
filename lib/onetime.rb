@@ -12,7 +12,7 @@ require_relative "onetime/client"
 # It supports the v1 and v2 APIs over a zero-dependency, stdlib-only
 # transport. See Onetime::Client for the primary interface.
 #
-#   require "onetime"
+#   require "onetimesecret"
 #
 #   client = Onetime::Client.new(
 #     base_url:    "https://ca.onetimesecret.com",

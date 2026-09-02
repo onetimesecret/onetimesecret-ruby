@@ -3,7 +3,7 @@
 require_relative "lib/onetime/version"
 
 Gem::Specification.new do |spec|
-  spec.name        = "onetime"
+  spec.name        = "onetimesecret"
   spec.version     = Onetime::VERSION
   spec.authors     = ["Delano Mandelbaum"]
   spec.email       = ["gems@onetimesecret.com"]
